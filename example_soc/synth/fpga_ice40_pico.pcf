@@ -1,0 +1,13 @@
+# 12 MHz oscillator
+set_io clk_osc 35
+
+set_io tck 47
+set_io tdi 48
+set_io tdo 2
+set_io tms 3
+
+set_io uart_rx 20
+set_io uart_tx 21
+
+# Red LED of RGB LED
+set_io led 39

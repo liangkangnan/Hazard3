@@ -8,3 +8,4 @@ srcs.mk
 *.config
 *.svf
 *.bit
+*.rbt
