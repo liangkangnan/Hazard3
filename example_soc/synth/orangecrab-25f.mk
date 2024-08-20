@@ -1,3 +1,5 @@
+include ../project_paths.mk
+
 CHIPNAME=fpga_orangecrab_25f
 TOP=fpga_orangecrab_25f
 DOTF=../fpga/fpga_orangecrab_25f.f
