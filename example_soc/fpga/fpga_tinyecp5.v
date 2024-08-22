@@ -49,13 +49,13 @@ activity_led #(
 	.o     (led)
 );
 
-example_soc #(
+tinyecp5_soc #(
 	.DTM_TYPE            ("JTAG"),
 	.CLK_MHZ             (24),
 	.SRAM_DEPTH          (1 << 14),
 
 	.EXTENSION_A         (1),
-	.EXTENSION_C         (0),
+	.EXTENSION_C         (1),
 	.EXTENSION_M         (1),
 	.EXTENSION_ZBA       (0),
 	.EXTENSION_ZBB       (0),
@@ -69,8 +69,8 @@ example_soc #(
 	.CSR_COUNTER         (1),
 	.U_MODE              (0),
 	.PMP_REGIONS         (0),
-	.BREAKPOINT_TRIGGERS (0),
-	.IRQ_PRIORITY_BITS   (0),
+	.BREAKPOINT_TRIGGERS (4),
+	.IRQ_PRIORITY_BITS   (2),
 	.REDUCED_BYPASS      (0),
 	.MULDIV_UNROLL       (1),
 	.MUL_FAST            (1),

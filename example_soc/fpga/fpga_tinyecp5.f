@@ -5,4 +5,4 @@ file ../libfpga/common/fpga_reset.v
 
 list ../libfpga/common/activity_led.f
 
-list ../soc/soc.f
+list ../soc/tinyecp5_soc.f
