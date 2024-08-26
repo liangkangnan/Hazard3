@@ -6,10 +6,10 @@ ifndef APP
 $(error Must define application name as APP)
 endif
 
-CCFLAGS      ?=
 LDSCRIPT     ?= ../common/ram.ld
 CROSS_PREFIX ?= riscv32-unknown-elf-
-INCDIR       ?= ../common
+
+INCDIR       += ../common
 
 CCFLAGS      += -Wl,--no-warn-rwx-segments -nostartfiles
 
