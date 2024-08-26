@@ -64,6 +64,7 @@ tinyecp5_soc #(
 	.EXTENSION_ZBKB      (0),
 	.EXTENSION_ZIFENCEI  (1),
 	.EXTENSION_XH3BEXTM  (0),
+	.EXTENSION_XH3IRQ    (1),
 	.EXTENSION_XH3PMPM   (0),
 	.EXTENSION_XH3POWER  (0),
 	.CSR_COUNTER         (1),
@@ -72,10 +73,10 @@ tinyecp5_soc #(
 	.BREAKPOINT_TRIGGERS (4),
 	.IRQ_PRIORITY_BITS   (2),
 	.REDUCED_BYPASS      (0),
-	.MULDIV_UNROLL       (1),
+	.MULDIV_UNROLL       (2),
 	.MUL_FAST            (1),
-	.MUL_FASTER          (0),
-	.MULH_FAST           (0),
+	.MUL_FASTER          (1),
+	.MULH_FAST           (1),
 	.FAST_BRANCHCMP      (1),
 	.BRANCH_PREDICTOR    (1)
 ) soc_u (

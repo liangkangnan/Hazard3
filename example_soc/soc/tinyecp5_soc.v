@@ -573,7 +573,7 @@ hazard3_riscv_timer timer_u (
 	.pready    (timer_pready),
 	.pslverr   (timer_pslverr),
 
-	.dbg_halt  (&hart_halted),
+	.dbg_halt  (hart_halted),
 
 	.tick      (timer_tick),
 
