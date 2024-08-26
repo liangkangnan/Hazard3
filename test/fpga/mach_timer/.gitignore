@@ -1,0 +1,6 @@
+*.elf
+*.bin
+*.o
+*.dis
+*.dump
+*.hex
