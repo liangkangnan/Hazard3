@@ -2,6 +2,6 @@ APP  := hello_world
 
 SRCS := main.c
 
-CCFLAGS = -march=rv32imac_zicsr_zifencei_zba_zbb_zbkb_zbs -g
+CCFLAGS = -march=rv32imac_zicsr_zifencei -g
 
 include ../common/common.mk
