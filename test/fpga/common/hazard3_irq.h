@@ -95,4 +95,14 @@ static inline void timer_irq_enable(bool en) {
 	}
 }
 
+static inline void soft_irq_enable(bool en) {
+	// mie.msie
+	if (en) {
+		set_csr(mie, 0x08);
+	}
+	else {
+		clear_csr(mie, 0x08);
+	}
+}
+
 #endif
