@@ -1,10 +1,24 @@
 #include <stdint.h>
 #include "uart_drv.h"
+#include "xprintf.h"
+#include "hazard3_csr.h"
 
 void __attribute__((interrupt)) handle_exception()
 {
     uart_init(115200);
-    uart_puts("handle_exception!!!\n");
+    xdev_out(uart_putc);
+
+    xprintf("!!! handle exception !!!\n");
+    xprintf("exception, mcause = %u\n", read_csr(mcause));
+
+    uint32_t mepc = read_csr(mepc);
+
+    xprintf("exception pc: 0x%08x\n", mepc);
+    if ((*(uint16_t*)mepc & 0x3) == 0x3) {
+        xprintf("exception instr: %04x%04x\n", *(uint16_t*)(mepc + 2), *(uint16_t*)mepc);
+    } else {
+        xprintf("exception instr: %04x\n", *(uint16_t*)mepc);
+    }
 
     while (1);
 }
