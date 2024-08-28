@@ -11,12 +11,12 @@ CROSS_PREFIX ?= riscv32-unknown-elf-
 
 INCDIR       += ../common
 
-CCFLAGS      += -Wl,--no-warn-rwx-segments -nostartfiles
+CCFLAGS      += -Wl,--no-warn-rwx-segments -nostartfiles -Wl,-Map,"$(APP).map"
 
 SRCS += ../drivers/uart/src/uart_drv.c
 SRCS += ../drivers/mach_timer/src/mach_timer_drv.c
 SRCS += ../common/xprintf.c
-SRCS += ../common/crt0.S ../common/irq_dispatch.S ../common/system.c
+SRCS += ../common/crt0.S ../common/system.c
 
 INCDIR += ../drivers/uart/inc
 INCDIR += ../drivers/mach_timer/inc
@@ -32,7 +32,7 @@ all: bin
 bin: $(APP).bin
 
 clean:
-	rm -rf $(APP).bin $(APP).elf $(APP).dis
+	rm -rf $(APP).bin $(APP).elf $(APP).dis $(APP).map
 
 ###############################################################################
 

@@ -1,153 +1,370 @@
-.globl _start;
+#define RVCSR_MEICONTEXT_OFFSET (0x00000be5)
+#define RVCSR_MEICONTEXT_CLEARTS_BITS   (0x00000002)
+#define RVCSR_MEINEXT_OFFSET (0x00000be4)
+#define RVCSR_MEINEXT_UPDATE_BITS   (0x00000001)
+#define RVCSR_MEIFA_OFFSET (0x00000be2)
+#define RVCSR_MIE_MEIE_BITS   (0x00000800)
+#define RVCSR_MSTATUS_MIE_BITS   (0x00000008)
 
-_start:
+
+.section .vectors, "ax"
+
+.p2align 6
+.global __vectors, __VECTOR_TABLE
+__VECTOR_TABLE:
+__vectors:
+
+// Hardware vector table for standard RISC-V interrupts, indicated by `mtvec`.
+
 .option push
+.option norvc
 .option norelax
+j isr_riscv_machine_exception
+.word 0
+.word 0
+j isr_riscv_machine_soft_irq
+.word 0
+.word 0
+.word 0
+j isr_riscv_machine_timer
+.word 0
+.word 0
+.word 0
+j isr_riscv_machine_external_irq
+.word 0
+.word 0
+.word 0
+.word 0
+j _reset_handler
+.option pop
 
-.section .vectors
+// External IRQ dispatch, inlined into the last vector table slot. Note if
+// this code is modified, the VTABLE_FIRST_IRQ define in platform_defs.h also
+// needs to be modified (it identifies the beginning of the soft vector table)
+.global isr_riscv_machine_external_irq
+.weak isr_riscv_machine_external_irq
+isr_riscv_machine_external_irq:
+    // Save caller saves and exception return state whilst IRQs are disabled.
+    // We can't be preempted during this time, but if a higher-priority IRQ
+    // arrives before we read meinext, that will be the one we enter.
+    addi sp, sp, -80
+    sw ra,  0(sp)
+    sw t0,  4(sp)
+    sw t1,  8(sp)
+    sw t2, 12(sp)
+    sw a0, 16(sp)
+    sw a1, 20(sp)
+    sw a2, 24(sp)
+    sw a3, 28(sp)
+    sw a4, 32(sp)
+    sw a5, 36(sp)
+    sw a6, 40(sp)
+    sw a7, 44(sp)
+    sw t3, 48(sp)
+    sw t4, 52(sp)
+    sw t5, 56(sp)
+    sw t6, 60(sp)
+    csrr a0, mepc
+    csrr a1, mstatus
+    sw a0, 64(sp)
+    sw a1, 68(sp)
+save_meicontext:
+    // Make sure to set meicontext.clearts to clear+save mie.msie/mtie along
+    // with ext IRQ context. We don't let these preempt ext IRQs because they
+    // clear meicontext.mreteirq, which breaks __get_current_exception().
+    csrrsi a2, RVCSR_MEICONTEXT_OFFSET, RVCSR_MEICONTEXT_CLEARTS_BITS
+    sw a2, 72(sp)
 
-.macro VEC name:req
-.p2align 2
-j \name
-.p2align 2
-.endm
+get_first_irq:
+    // Sample the current highest-priority active IRQ (left-shifted by 2) from
+    // meinext, and write 1 to meinext.update to update meicontext with the
+    // preemption priority and IRQ number of this IRQ
+    csrrsi a0, RVCSR_MEINEXT_OFFSET, RVCSR_MEINEXT_UPDATE_BITS
+    // MSB will be set if there is no active IRQ at the current priority level
+    bltz a0, no_more_irqs
+dispatch_irq:
+    // Preemption priority was configured by meinext update, so enable preemption:
+    csrsi mstatus, 0x8
+    // <- from this point we can be preempted by a higher-priority interrupt.
+    // meinext is pre-shifted by 2, so only an add is required to index table
+    lui a1, %hi(__soft_vector_table)
+    add a1, a1, a0
+    lw a1, %lo(__soft_vector_table)(a1)
+    jalr ra, a1
+    // Disable IRQs on returning so we can sample the next IRQ
+    csrci mstatus, 0x8
+get_next_irq:
+    // Get the next-highest-priority IRQ that is active at this level. If
+    // there is such an IRQ, update meicontext with new preemption priority.
+    csrrsi a0, RVCSR_MEINEXT_OFFSET, RVCSR_MEINEXT_UPDATE_BITS
+    // MSB will be set if there is no active IRQ at the current priority level
+    bgez a0, dispatch_irq
 
-// ----------------------------------------------------------------------------
-// Vector table (must be at least aligned to its size rounded up to power of 2)
+no_more_irqs:
+    // Restore saved context and return from IRQ
+    lw a0, 64(sp)
+    lw a1, 68(sp)
+    lw a2, 72(sp)
+    csrw mepc, a0
+    csrw mstatus, a1
+    csrw RVCSR_MEICONTEXT_OFFSET, a2
+    lw ra,  0(sp)
+    lw t0,  4(sp)
+    lw t1,  8(sp)
+    lw t2, 12(sp)
+    // skip a0 for now
+    lw a1, 20(sp)
+    lw a2, 24(sp)
+    lw a3, 28(sp)
+    lw a4, 32(sp)
+    lw a5, 36(sp)
+    lw a6, 40(sp)
+    lw a7, 44(sp)
+    lw t3, 48(sp)
+    lw t4, 52(sp)
+    lw t5, 56(sp)
+    lw t6, 60(sp)
+    // Before popping the stack frame, check if there is a new IRQ, and if so,
+    // abandon the mret and take the IRQ. This avoids a worst-case (restore ->
+    // mret -> enter -> save) latency. Note since we have already restored
+    // meicontext, we will have to re-save it, to re-clear mtie/msie.
+check_irq_before_exit:
+    csrr a0, RVCSR_MEINEXT_OFFSET
+    bgez a0, save_meicontext
+    lw a0, 16(sp)
+    addi sp, sp, 80
+    mret
 
-.p2align 12
-.vector_table:
+// Default software vector table for system interrupts, routed through
+// mip.meip. Note this is assumed in e.g. hardware_irq to begin exactly 0x34
+// words after the hardware vector table indicated by mtvec (defined above).
+.p2align 4
+.global __soft_vector_table
+__soft_vector_table:
+.word isr_uart
+.word isr_irq1
+.word isr_irq2
+.word isr_irq3
 
-// Single exception vector, also takes IRQs if vectoring is disabled
+// all default trap handlers do nothing, and we can check for them being set to our
+// default values by seeing if they point to somewhere between __defaults_isrs_start and __default_isrs_end
+.global __default_isrs_start
+__default_isrs_start:
 
-	VEC handle_exception
+// Declare a weak symbol for each ISR.
+// By default, they will fall through to the undefined IRQ handler below (breakpoint),
+// but can be overridden by C functions with correct name.
 
-// Standard interrupts, if vectoring is enabled
-// Note: global EIRQ does not fire. Instead we have 16 separate vectors
-
-	// handle_exception ^^^ takes the slot where U-mode softirq would be
-	VEC .halt
-	VEC .halt
-	VEC isr_machine_softirq
-	VEC .halt
-	VEC .halt
-	VEC .halt
-	VEC isr_machine_timer
-	VEC .halt
-	VEC .halt
-	VEC .halt
-	VEC isr_external_irq
-	VEC .halt
-	VEC .halt
-	VEC .halt
-	VEC .halt
-
-// ----------------------------------------------------------------------------
-// Reset handler
-
-.reset_handler:
-	// Set counters running, as they are off by default. This may trap if counters
-	// are unimplemented, so catch the trap and continue.
-	la a0, 1f
-	csrw mtvec, a0
-	csrci mcountinhibit, 0x5
-.p2align 2
-1:
-	// Set up trap vector table. mtvec LSB enables vectoring
-	la a0, .vector_table + 1
-	csrw mtvec, a0
-
-	// Put spare cores to sleep before setting up core 0 stack
-	csrr a0, mhartid
-	bnez a0, .core1_wait
-
-	// Set up stack pointer before doing anything else
-	la sp, _sp
-    la gp, __global_pointer$
-
-	/* Load data section */
-	la a0, _data_lma
-	la a1, _data
-	la a2, _edata
-	bgeu a1, a2, 2f
-1:
-	lw t0, (a0)
-	sw t0, (a1)
-	addi a0, a0, 4
-	addi a1, a1, 4
-	bltu a1, a2, 1b
-2:
-
-	/* Clear bss section */
-	la a0, __bss_start
-	la a1, _end
-	bgeu a0, a1, 2f
-1:
-	sw zero, (a0)
-	addi a0, a0, 4
-	bltu a0, a1, 1b
-2:
-
-	li a0, 0
-    li a1, 0
-    call main
-
-	j .halt
-
-.core1_wait:
-	// IRQs disabled, but soft IRQ unmasked -> soft IRQ will exit WFI.
-	csrci mstatus, 0x8
-	csrw mie, 0x8
-.core1_wait_loop:
-	wfi
-	la a0, core1_entry_vector
-	lw a0, (a0)
-	beqz a0, .core1_wait_loop
-	la sp, __stack_top - 0x10000
-	jalr a0
-.core1_finish:
-	wfi
-	j .core1_finish
-
-.p2align 2
-.global core1_entry_vector
-core1_entry_vector:
-	.word 0
-
-.global _exit
-_exit:
-	j .halt
-
-.global _sbrk
-_sbrk:
-	la a1, heap_ptr
-	lw a2, (a1)
-	add a0, a0, a2
-	sw a0, (a1)
-	mv a0, a2
-	ret
-
-.p2align 2
-heap_ptr:
-	.word _end
-
-.global .halt
-.halt:
-	j .halt
-
-
-.macro weak_handler name:req
-.p2align 2
-.global \name
+.macro decl_isr name
 .weak \name
 \name:
-	j .halt
-_str_\name:
-	.asciz "\name"
 .endm
 
-weak_handler handle_exception
-weak_handler isr_machine_softirq
-weak_handler isr_machine_timer
-weak_handler isr_external_irq
+.macro decl_isr_bkpt name
+.weak \name
+\name:
+    ebreak
+.endm
+
+// hardware_exception on RISC-V defines its own weak handler
+#if !PICO_CRT0_NO_ISR_RISCV_MACHINE_EXCEPTION
+// Breakpoint will just cause another exception and trash the exception
+// state, since there is no double fault lockup on RISC-V. Instead, just
+// sleep the core indefinitely, or until debugger connects.
+decl_isr isr_riscv_machine_exception
+#endif
+
+// Note the mip.mtip is also available as SIO_IRQ_MTIMECMP, and this may be a
+// better option, because it plays nicely with interrupt preemption.
+decl_isr_bkpt isr_riscv_machine_timer
+decl_isr_bkpt isr_riscv_machine_soft_irq
+
+decl_isr isr_uart
+decl_isr isr_irq1
+decl_isr isr_irq2
+decl_isr isr_irq3
+// fall through
+
+// All unhandled USER IRQs fall through to here. Note there is no way to get
+// the "current exception" on RISC-V (as there is no such thing -- the
+// hardware does not model the exception lifecycle like on Arm) so instead we
+// just pass the IRQ number into the IRQ handler in a0.
+.global __unhandled_user_irq
+__unhandled_user_irq:
+.global unhandled_user_irq_num_in_a0
+unhandled_user_irq_num_in_a0:
+    // The dispatch code will have left IRQ << 2 in a0 from its meinext read,
+    // so just need to shift it back down
+    srli a0, a0, 2
+    ebreak
+
+.global __default_isrs_end
+__default_isrs_end:
+
+// ----------------------------------------------------------------------------
+
+.section .reset, "ax"
+
+// ELF entry point:
+.global _entry_point
+_entry_point:
+
+// Reset handler:
+// - initialises .data
+// - clears .bss
+// - calls runtime_init
+// - calls main
+// - calls exit (which should eventually hang the processor via _exit)
+
+_reset_handler:
+.option push
+.option norelax
+    la gp, __global_pointer$
+.option pop
+    la sp, __StackTop
+    // Leave interrupts globally disabled for now, we will set that up later
+    // in runtime_init_per_core_h3_irq_registers. Still worth installing the vector table:
+    la a0, __vectors + 1
+    csrw mtvec, a0
+    csrci mcountinhibit, 0x5
+
+    // Only core 0 should run the C runtime startup code; core 1 is normally
+    // sleeping in the bootrom at this point but check to be sure
+    //csrr a0, mhartid
+    //bnez a0, reenter_bootrom
+
+    // In a NO_FLASH binary, don't perform .data etc copy, since it's loaded
+    // in-place by the SRAM load. Still need to clear .bss
+#if 0
+    la a4, data_cpy_table
+
+    // assume there is at least one entry
+1:
+    lw a1, 0(a4)
+    beqz a1, 2f
+    lw a2, 4(a4)
+    lw a3, 8(a4)
+    addi a4, a4, 12
+    jal data_cpy
+    j 1b
+2:
+#endif
+
+    // Zero out the BSS
+    la a1, __bss_start__
+    la a2, __bss_end__
+    j bss_fill_test
+bss_fill_loop:
+    sw zero, (a1)
+    addi a1, a1, 4
+bss_fill_test:
+    bne a1, a2, bss_fill_loop
+
+platform_entry: // symbol for stack traces
+    // Use `call` pseudo-instruction instead of a bare `jal` so that the
+    // linker can use longer sequences if these are out of `jal` range. Will
+    // still get relaxed to a `jal` if possible.
+    // call runtime_init_per_core_h3_irq_registers (now called in runtime_init)
+    call runtime_init
+    call main
+    //call exit
+    // exit should not return.  If it does, hang the core.
+    // (fall thru into our hang _exit impl
+1: // separate label because _exit can be moved out of branch range
+    ebreak
+    j 1b
+
+data_cpy_loop:
+    lw a0, (a1)
+    sw a0, (a2)
+    addi a1, a1, 4
+    addi a2, a2, 4
+data_cpy:
+    bltu a2, a3, data_cpy_loop
+    ret
+
+.align 2
+data_cpy_table:
+.word __etext
+.word __data_start__
+.word __data_end__
+
+.word __scratch_x_source__
+.word __scratch_x_start__
+.word __scratch_x_end__
+
+.word __scratch_y_source__
+.word __scratch_y_start__
+.word __scratch_y_end__
+
+.word 0 // null terminator
+
+// ----------------------------------------------------------------------------
+// Provide safe defaults for _exit and runtime_init
+// Full implementations usually provided by platform.c
+
+.weak runtime_init
+runtime_init:
+    ret
+
+// ----------------------------------------------------------------------------
+// IRQ register clearing
+
+// Enable interrupts globally, but disable all interrupt sources.
+//
+// This is put in the .text section as it is called again on core 1 launch. In
+// COPY_TO_RAM binaries, the .reset section is always in flash, whereas .text
+// is in SRAM, and we try to avoid running any code from flash after entering
+// user code in a COPY_TO_RAM binary. Note because of this we don't call this
+// function here in crt0 until after the flash-to-RAM copying is finished.
+
+.section .text
+.global runtime_init_per_core_h3_irq_registers
+runtime_init_per_core_h3_irq_registers:
+    // First clear all IRQ force array bits. Iterate over array registers 0
+    // through 3 inclusive, allowing for up to 64 IRQs. Don't clear the
+    // enable array as earlier (non-per-core) init stages may have already
+    // set up IRQs.
+    li a0, 3
+1:
+    csrw RVCSR_MEIFA_OFFSET, a0
+    addi a0, a0, -1
+    bgez a0, 1b
+    // Setting the global external IRQ enable in mie prepares us to enable
+    // IRQs one-by-one later. Also clear the soft IRQ and timer IRQ enables:
+    li a0, RVCSR_MIE_MEIE_BITS
+    csrw mie, a0
+    // Set the global IRQ: we will now take any individual interrupt that is
+    // pending && enabled
+    csrsi mstatus, RVCSR_MSTATUS_MIE_BITS
+    // Take this chance to clear mscratch, which is used to detect nested
+    // exceptions in isr_riscv_machine_exception:
+    csrw mscratch, zero
+    ret
+
+// ----------------------------------------------------------------------------
+// Stack/heap dummies to set size
+
+// Prior to SDK 1.5.1 these were `.section .stack` without the `, "a"`... Clang linker gives a warning about this,
+// however setting it explicitly to `, "a"` makes GCC *now* discard the section unless it is also KEEP. This
+// seems like very surprising behavior!
+//
+// Strictly the most correct thing to do (as .stack and .heap are unreferenced) is to mark them as "a", and also KEEP, which
+// works correctly for both GCC and Clang, however doing so may break anyone who already has custom linker scripts without
+// the KEEP. Therefore we will only add the "a" on Clang, but will also use KEEP to our own linker scripts.
+
+.macro spacer_section name
+.section \name
+.endm
+
+spacer_section .stack
+// align to allow for memory protection (although this alignment is pretty much ignored by linker script)
+.p2align 5
+    .equ StackSize, 0x800
+.space StackSize
+
+spacer_section .heap
+.p2align 2
+    .equ HeapSize, 0x800
+.space HeapSize
 

@@ -3,7 +3,7 @@
 #include "xprintf.h"
 #include "hazard3_csr.h"
 
-void __attribute__((interrupt)) handle_exception()
+void __attribute__((interrupt)) isr_riscv_machine_exception()
 {
     uart_init(115200);
     xdev_out(uart_putc);
@@ -21,4 +21,11 @@ void __attribute__((interrupt)) handle_exception()
     }
 
     while (1);
+}
+
+extern void runtime_init_per_core_h3_irq_registers(void);
+
+void runtime_init()
+{
+    runtime_init_per_core_h3_irq_registers();
 }

@@ -6,12 +6,8 @@
 #include "stdbool.h"
 
 // Should match processor configuration in testbench:
-#define NUM_IRQS 32
+#define NUM_IRQS 4
 #define MAX_PRIORITY 15
-
-// Declarations for irq_dispatch.S
-extern uintptr_t _external_irq_table[NUM_IRQS];
-extern uint32_t _external_irq_entry_count;
 
 #define h3irq_array_read(csr, index) (read_set_csr(csr, (index)) >> 16)
 
@@ -59,10 +55,6 @@ static inline void h3irq_set_priority(unsigned int irq, uint32_t priority) {
 	// it may already be in an older stack frame)
 	h3irq_array_clear(hazard3_csr_meipra, irq >> 2, 0xfu << (4 * (irq & 0x3)));
 	h3irq_array_set(hazard3_csr_meipra, irq >> 2, (priority & 0xfu) << (4 * (irq & 0x3)));
-}
-
-static inline void h3irq_set_handler(unsigned int irq, void (*handler)(void)) {
-	_external_irq_table[irq] = (uintptr_t)handler;
 }
 
 static inline void global_irq_enable(bool en) {
