@@ -242,51 +242,7 @@ wire              unblock_out;
 wire              uart_irq;
 wire              timer_irq;
 
-hazard3_cpu_1port #(
-	// These must have the values given here for you to end up with a useful SoC:
-	.RESET_VECTOR    (32'h0000_0040),
-	.MTVEC_INIT      (32'h0000_0000),
-	.CSR_M_MANDATORY (1),
-	.CSR_M_TRAP      (1),
-	.DEBUG_SUPPORT   (1),
-	.NUM_IRQS        (4),
-	.RESET_REGFILE   (0),
-	// Can be overridden from the defaults in hazard3_config.vh during
-	// instantiation of example_soc():
-	.EXTENSION_A         (EXTENSION_A),
-	.EXTENSION_C         (EXTENSION_C),
-	.EXTENSION_M         (EXTENSION_M),
-	.EXTENSION_ZBA       (EXTENSION_ZBA),
-	.EXTENSION_ZBB       (EXTENSION_ZBB),
-	.EXTENSION_ZBC       (EXTENSION_ZBC),
-	.EXTENSION_ZBS       (EXTENSION_ZBS),
-	.EXTENSION_ZBKB      (EXTENSION_ZBKB),
-	.EXTENSION_ZIFENCEI  (EXTENSION_ZIFENCEI),
-	.EXTENSION_XH3BEXTM  (EXTENSION_XH3BEXTM),
-	.EXTENSION_XH3IRQ    (EXTENSION_XH3IRQ),
-	.EXTENSION_XH3PMPM   (EXTENSION_XH3PMPM),
-	.EXTENSION_XH3POWER  (EXTENSION_XH3POWER),
-	.CSR_COUNTER         (CSR_COUNTER),
-	.U_MODE              (U_MODE),
-	.PMP_REGIONS         (PMP_REGIONS),
-	.PMP_GRAIN           (PMP_GRAIN),
-	.PMP_HARDWIRED       (PMP_HARDWIRED),
-	.PMP_HARDWIRED_ADDR  (PMP_HARDWIRED_ADDR),
-	.PMP_HARDWIRED_CFG   (PMP_HARDWIRED_CFG),
-	.MVENDORID_VAL       (MVENDORID_VAL),
-	.BREAKPOINT_TRIGGERS (BREAKPOINT_TRIGGERS),
-	.IRQ_PRIORITY_BITS   (IRQ_PRIORITY_BITS),
-	.MIMPID_VAL          (MIMPID_VAL),
-	.MHARTID_VAL         (MHARTID_VAL),
-	.REDUCED_BYPASS      (REDUCED_BYPASS),
-	.MULDIV_UNROLL       (MULDIV_UNROLL),
-	.MUL_FAST            (MUL_FAST),
-	.MUL_FASTER          (MUL_FASTER),
-	.MULH_FAST           (MULH_FAST),
-	.FAST_BRANCHCMP      (FAST_BRANCHCMP),
-	.BRANCH_PREDICTOR    (BRANCH_PREDICTOR),
-	.MTVEC_WMASK         (MTVEC_WMASK)
-) cpu (
+hazard3_cpu_1port cpu (
 	.clk                        (clk),
 	.clk_always_on              (clk),
 	.rst_n                      (rst_n_cpu),
@@ -336,7 +292,7 @@ hazard3_cpu_1port #(
 	.dbg_sbus_wdata             (sbus_wdata),
 	.dbg_sbus_rdata             (sbus_rdata),
 
-	.irq                        (uart_irq),
+	.irq                        ({3'h0, uart_irq}),
 
 	.soft_irq                   (1'b0),
 	.timer_irq                  (timer_irq)
