@@ -167,12 +167,10 @@ __default_isrs_start:
 .endm
 
 // hardware_exception on RISC-V defines its own weak handler
-#if !PICO_CRT0_NO_ISR_RISCV_MACHINE_EXCEPTION
 // Breakpoint will just cause another exception and trash the exception
 // state, since there is no double fault lockup on RISC-V. Instead, just
 // sleep the core indefinitely, or until debugger connects.
-decl_isr isr_riscv_machine_exception
-#endif
+decl_isr_bkpt isr_riscv_machine_exception
 
 // Note the mip.mtip is also available as SIO_IRQ_MTIMECMP, and this may be a
 // better option, because it plays nicely with interrupt preemption.
