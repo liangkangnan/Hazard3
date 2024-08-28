@@ -1,6 +1,4 @@
-#include <stdarg.h>
 #include <stdint.h>
-#include <stdio.h>
 #include <stdbool.h>
 
 #include "uart_drv.h"
@@ -17,8 +15,61 @@ void uart_putc(char c)
 	UART->TX = (uint8_t)c;
 }
 
+uint8_t uart_getc()
+{
+    return UART->RX;
+}
+
 void uart_puts(const char *s)
 {
 	while (*s)
 		uart_putc(*s++);
+}
+
+void uart_txfifo_not_full_irq_enable(bool en)
+{
+    if (en)
+        UART->CSR |= 1 << UART_CSR_TXIE_LSB;
+    else
+        UART->CSR &= ~(1 << UART_CSR_TXIE_LSB);
+}
+
+bool uart_txfifo_not_full_irq_is_enabled()
+{
+    if (UART->CSR & (1 << UART_CSR_TXIE_LSB))
+        return true;
+    else
+        return false;
+}
+
+void uart_rxfifo_not_empty_irq_enable(bool en)
+{
+    if (en)
+        UART->CSR |= 1 << UART_CSR_RXIE_LSB;
+    else
+        UART->CSR &= ~(1 << UART_CSR_RXIE_LSB);
+}
+
+bool uart_rxfifo_not_empty_irq_is_enabled()
+{
+    if (UART->CSR & (1 << UART_CSR_RXIE_LSB))
+        return true;
+    else
+        return false;
+}
+
+bool uart_txfifo_full()
+{
+    if (UART->FSTAT & (1 << UART_FSTAT_TXFULL_LSB))
+        return true;
+    else
+        return false;
+}
+
+bool uart_rxfifo_empty()
+{
+    if (UART->FSTAT & (1 << UART_FSTAT_RXEMPTY_LSB))
+        return true;
+    else
+        return false;
 }

@@ -1,6 +1,9 @@
 #ifndef _UART_DRV_H_
 #define _UART_DRV_H_
 
+#include <stdint.h>
+#include <stdbool.h>
+
 #include "uart_regs.h"
 
 #define UART_MODULE_CLK (24000000)
@@ -23,6 +26,13 @@ typedef struct {
 
 void uart_init(uint32_t baud);
 void uart_putc(char c);
+uint8_t uart_getc();
 void uart_puts(const char *s);
+void uart_txfifo_not_full_irq_enable(bool en);
+bool uart_txfifo_not_full_irq_is_enabled();
+void uart_rxfifo_not_empty_irq_enable(bool en);
+bool uart_rxfifo_not_empty_irq_is_enabled();
+bool uart_txfifo_full();
+bool uart_rxfifo_empty();
 
 #endif

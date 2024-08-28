@@ -23,32 +23,40 @@ void mach_timer_irq_enable(bool en)
 
 void mach_timer_set_cmp_time(uint64_t cmp)
 {
+    MACH_TIMER->MTIMECMP = -1u;
+    MACH_TIMER->MTIMECMPH = cmp >> 32;
     MACH_TIMER->MTIMECMP = cmp & 0xffffffff;
-    MACH_TIMER->MTIMECMPH = (cmp >> 32) & 0xffffffff;
 }
 
 uint64_t mach_timer_get_cmp_time()
 {
-    uint64_t cmp;
+    uint32_t h0, l, h1;
 
-    cmp = MACH_TIMER->MTIMECMP;
-    cmp += (uint64_t)(MACH_TIMER->MTIMECMPH) << 32;
+    do {
+        h0 = MACH_TIMER->MTIMECMPH;
+        l  = MACH_TIMER->MTIMECMP;
+        h1 = MACH_TIMER->MTIMECMPH;
+    } while (h0 != h1);
 
-    return cmp;
+    return l | (uint64_t)h1 << 32;
 }
 
 void mach_timer_set_time(uint64_t time)
 {
+    MACH_TIMER->MTIME = 0;
+    MACH_TIMER->MTIMEH = time >> 32;
     MACH_TIMER->MTIME = time & 0xffffffff;
-    MACH_TIMER->MTIMEH = (time >> 32) & 0xffffffff;
 }
 
 uint64_t mach_timer_get_time()
 {
-    uint64_t cmp;
+    uint32_t h0, l, h1;
 
-    cmp = MACH_TIMER->MTIME;
-    cmp += (uint64_t)(MACH_TIMER->MTIMEH) << 32;
+    do {
+        h0 = MACH_TIMER->MTIMEH;
+        l  = MACH_TIMER->MTIME;
+        h1 = MACH_TIMER->MTIMEH;
+    } while (h0 != h1);
 
-    return cmp;
+    return l | (uint64_t)h1 << 32;
 }
