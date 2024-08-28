@@ -35,7 +35,7 @@ int main()
 	return 0;
 }
 
-void __attribute__((interrupt)) isr_machine_timer()
+void __attribute__((interrupt)) isr_riscv_machine_timer()
 {
     mach_timer_set_time(0);
 
