@@ -170,7 +170,7 @@ __default_isrs_start:
 // Breakpoint will just cause another exception and trash the exception
 // state, since there is no double fault lockup on RISC-V. Instead, just
 // sleep the core indefinitely, or until debugger connects.
-decl_isr_bkpt isr_riscv_machine_exception
+//decl_isr_bkpt isr_riscv_machine_exception
 
 // Note the mip.mtip is also available as SIO_IRQ_MTIMECMP, and this may be a
 // better option, because it plays nicely with interrupt preemption.

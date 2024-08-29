@@ -16,7 +16,7 @@ CCFLAGS      += -Wl,--no-warn-rwx-segments -nostartfiles -Wl,-Map,"$(APP).map"
 SRCS += ../drivers/uart/src/uart_drv.c
 SRCS += ../drivers/mach_timer/src/mach_timer_drv.c
 SRCS += ../common/xprintf.c
-SRCS += ../common/crt0.S ../common/system.c
+SRCS += ../common/crt0.S ../common/exception_table.S ../common/system.c ../common/exception_handler.c
 
 INCDIR += ../drivers/uart/inc
 INCDIR += ../drivers/mach_timer/inc
