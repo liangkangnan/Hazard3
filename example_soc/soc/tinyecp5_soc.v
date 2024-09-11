@@ -31,9 +31,6 @@ module tinyecp5_soc #(
 	input  wire              uart_rx
 );
 
-localparam W_ADDR = 32;
-localparam W_DATA = 32;
-
 // ----------------------------------------------------------------------------
 // Processor debug
 
