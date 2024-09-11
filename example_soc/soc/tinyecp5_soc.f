@@ -4,9 +4,9 @@ file tinyecp5_soc.v
 
 # CPU + debug components
 
-list $HDL/hazard3.f
-list $HDL/debug/dtm/hazard3_jtag_dtm.f
-list $HDL/debug/dm/hazard3_dm.f
+list ../../hdl/hazard3.f
+list ../../hdl/debug/dtm/hazard3_jtag_dtm.f
+list ../../hdl/debug/dm/hazard3_dm.f
 
 # RISC-V timer
 
