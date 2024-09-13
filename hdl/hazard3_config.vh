@@ -75,7 +75,7 @@ parameter EXTENSION_ZIFENCEI  = 1,
 // Custom RISC-V extensions
 
 // EXTENSION_XH3B: Custom bit-extract-multiple instructions for Hazard3
-parameter EXTENSION_XH3BEXTM  = 0,
+parameter EXTENSION_XH3BEXTM  = 1,
 
 // EXTENSION_XH3IRQ: Custom preemptive, prioritised interrupt support. Can be
 // disabled if an external interrupt controller (e.g. PLIC) is used. If
