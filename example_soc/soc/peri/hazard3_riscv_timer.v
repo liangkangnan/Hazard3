@@ -50,7 +50,7 @@ if (TICK_IS_NRZ) begin: edge_detect
 	hazard3_sync_1bit tick_sync_u (
 		.clk    (clk),
 		.rst_n  (rst_n),
-		.i      (tick_nrz),
+		.i      (tick),
 		.o      (tick_nrz_sync)
 	);
 
@@ -63,7 +63,7 @@ if (TICK_IS_NRZ) begin: edge_detect
 		end
 	end
 
-	assign tick_event = tick_nrz_sync ^ tick_nrz_sync_prev;
+	assign tick_event = tick_nrz_sync ^ tick_nrz_prev;
 
 end else begin: no_edge_detect
 
