@@ -473,7 +473,11 @@ ahb_sync_sram #(
 	.ahbls_hrdata      (sram0_hrdata)
 );
 
+`ifdef SIMULATION
+uart_sim uart_u (
+`else
 uart_mini uart_u (
+`endif
 	.clk          (clk),
 	.rst_n        (rst_n),
 
