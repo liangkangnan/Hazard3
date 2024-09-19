@@ -1,2 +1,8 @@
 out/
 *.log
+.Xil/
+*.log
+*.html
+*.xml
+.ip_user_files/
+
