@@ -11,8 +11,8 @@
 #include "dut.cpp"
 #include <cxxrtl/cxxrtl_vcd.h>
 
-// 64KB
-#define MEM_SIZE (64 * 1024)
+// MEM_KB define in Makefile
+#define MEM_SIZE (MEM_KB * 1024)
 
 uint8_t bin_memory[MEM_SIZE];
 static const int TCP_BUF_SIZE = 256;
