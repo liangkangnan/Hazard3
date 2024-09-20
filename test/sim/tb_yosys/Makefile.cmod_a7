@@ -1,0 +1,33 @@
+include ../project_paths.mk
+
+TOP       := tb_top
+DOTF      := tb_cmod_a7_top.f
+TBEXEC    := $(patsubst %.f,%,$(DOTF))
+
+SIM_SRCS := $(shell HDL=$(HDL) $(SCRIPTS)/listfiles --relative -f flat $(DOTF))
+INVDIRS  := $(shell HDL=$(HDL) $(SCRIPTS)/listfiles --relative -f flati $(DOTF))
+
+BUILD_DIR := build-$(patsubst %.f,%,$(DOTF))
+
+CLANGXX   := clang++-14
+
+.PHONY: clean all lint
+
+all: $(TBEXEC)
+
+SYNTH_CMD += read_verilog $(addprefix -I,$(INVDIRS)) -DSIMULATION $(SIM_SRCS);
+SYNTH_CMD += hierarchy -top $(TOP);
+SYNTH_CMD += write_cxxrtl $(BUILD_DIR)/dut.cpp
+
+$(BUILD_DIR)/dut.cpp: $(SIM_SRCS)
+	mkdir -p $(BUILD_DIR)
+	yosys -p '$(SYNTH_CMD)' 2>&1 > $(BUILD_DIR)/cxxrtl.log
+
+clean::
+	rm -rf $(BUILD_DIR) $(TBEXEC)
+
+$(TBEXEC): $(BUILD_DIR)/dut.cpp tb_top.cpp
+	$(CLANGXX) -O3 -std=c++14 -I $(shell yosys-config --datdir)/include/backends/cxxrtl/runtime -I $(BUILD_DIR) tb_top.cpp -o $(TBEXEC)
+
+lint:
+	verilator --lint-only --top-module $(TOP) -I$(HDL) $(SIM_SRCS)
