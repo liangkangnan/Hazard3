@@ -138,13 +138,21 @@ int main(int argc, char **argv, char **env)
             word += bin_memory[i + 1] << 8;
             word += bin_memory[i + 2] << 16;
             word += bin_memory[i + 3] << 24;
-            top.memory_p_u__fpga_2e_soc__u_2e_sram0_2e_sram_2e_behav__mem_2e_mem[j].set<uint32_t>(word);
+            #ifdef HAS_FLASH
+                top.memory_p_u__fpga_2e_soc__u_2e_flash_2e_sram_2e_behav__mem_2e_mem[j].set<uint32_t>(word);
+            #else
+                top.memory_p_u__fpga_2e_soc__u_2e_sram0_2e_sram_2e_behav__mem_2e_mem[j].set<uint32_t>(word);
+            #endif
         }
         word = 0;
         for (i = 0; i < bin_size % 4; i++) {
             word += bin_memory[(bin_size / 4) * 4 + i] << (i * 8);
         }
-        top.memory_p_u__fpga_2e_soc__u_2e_sram0_2e_sram_2e_behav__mem_2e_mem[j].set<uint32_t>(word);
+        #ifdef HAS_FLASH
+            top.memory_p_u__fpga_2e_soc__u_2e_flash_2e_sram_2e_behav__mem_2e_mem[j].set<uint32_t>(word);
+        #else
+            top.memory_p_u__fpga_2e_soc__u_2e_sram0_2e_sram_2e_behav__mem_2e_mem[j].set<uint32_t>(word);
+        #endif
     }
 
 	int server_fd, sock_fd;
