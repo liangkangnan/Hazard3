@@ -23,9 +23,9 @@
 
 MEMORY
 {
-    RAM(rwx) : ORIGIN =  0x00000000, LENGTH = 60k
-    SCRATCH_X(rwx) : ORIGIN = 0x0000F000, LENGTH = 2k
-    SCRATCH_Y(rwx) : ORIGIN = 0x0000F800, LENGTH = 2k
+    RAM(rwx) : ORIGIN =  0x00000000, LENGTH = 124k
+    SCRATCH_X(rwx) : ORIGIN = 0x0001F000, LENGTH = 2k
+    SCRATCH_Y(rwx) : ORIGIN = 0x0001F800, LENGTH = 2k
 }
 
 ENTRY(_entry_point)
