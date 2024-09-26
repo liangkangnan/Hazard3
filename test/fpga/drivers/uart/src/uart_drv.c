@@ -1,12 +1,13 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#include "system.h"
 #include "uart_drv.h"
 
 void uart_init(uint32_t baud)
 {
     UART->CSR |= 1;
-    UART->DIV = (UART_MODULE_CLK / 8 / baud) << 4;
+    UART->DIV = (get_uart_clock_hz() / 8 / baud) << 4;
 }
 
 void uart_putc(char c)

@@ -6,8 +6,6 @@
 
 #include "uart_regs.h"
 
-#define UART_MODULE_CLK (12000000)
-
 #define UART_BASE_ADDR  (0x40004000)
 
 #ifndef PRINTF_BUF_SIZE
