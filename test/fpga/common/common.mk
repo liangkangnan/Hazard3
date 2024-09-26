@@ -6,17 +6,21 @@ ifndef APP
 $(error Must define application name as APP)
 endif
 
-LDSCRIPT     ?= ../common/ram.ld
+LDSCRIPT     ?= ../common/flash_ram.ld
 CROSS_PREFIX ?= riscv32-unknown-elf-
 
 INCDIR       += ../common
 
-CCFLAGS      += -Wl,--no-warn-rwx-segments -nostartfiles -Wl,-Map,"$(APP).map"
+CCFLAGS      += -mabi=ilp32 -Wl,--gc-sections -Wl,--no-warn-rwx-segments -nostartfiles --specs=nosys.specs -Wl,-Map,$(APP).map
+CCFLAGS      += -Wl,--wrap=malloc -Wl,--wrap=calloc -Wl,--wrap=realloc -Wl,--wrap=free -Wl,--wrap=sprintf -Wl,--wrap=snprintf -Wl,--wrap=vsnprintf
+CCFLAGS      += -Wl,--wrap=printf -Wl,--wrap=vprintf -Wl,--wrap=puts -Wl,--wrap=putchar -Wl,--wrap=getchar
 
 SRCS += ../drivers/uart/src/uart_drv.c
 SRCS += ../drivers/mach_timer/src/mach_timer_drv.c
-SRCS += ../common/xprintf.c
 SRCS += ../common/crt0.S ../common/exception_table.S ../common/system.c ../common/exception_handler.c
+SRCS += ../common/syscalls.c
+SRCS += ../common/printf.c
+SRCS += ../common/wrap.c
 
 INCDIR += ../drivers/uart/inc
 INCDIR += ../drivers/mach_timer/inc

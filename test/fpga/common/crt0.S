@@ -233,7 +233,7 @@ _reset_handler:
 
     // In a NO_FLASH binary, don't perform .data etc copy, since it's loaded
     // in-place by the SRAM load. Still need to clear .bss
-#if 0
+#if 1
     la a4, data_cpy_table
 
     // assume there is at least one entry
