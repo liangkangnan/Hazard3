@@ -38,7 +38,8 @@ Original Author: Shay Gal-on
 #include "core_portme.h"
 
 #if HAS_STDIO
-#include <stdio.h>
+//#include <stdio.h>
+#include "printf.h"
 #endif
 #if HAS_PRINTF
 #define ee_printf printf
