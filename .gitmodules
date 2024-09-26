@@ -3,7 +3,7 @@
 	url = https://github.com/wren6991/riscv-arch-test.git
 [submodule "scripts"]
 	path = scripts
-	url = https://github.com/Wren6991/fpgascripts
+	url = https://github.com/liangkangnan/fpgascripts.git
 [submodule "test/formal/riscv-formal"]
 	path = test/formal/riscv-formal/riscv-formal
 	url = https://github.com/Wren6991/riscv-formal.git
