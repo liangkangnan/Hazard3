@@ -73,3 +73,19 @@ bool uart_rxfifo_empty()
     else
         return false;
 }
+
+// for printf
+void _putchar(char character)
+{
+    uart_putc(character);
+}
+
+int __io_putchar(int ch)
+{
+    uart_putc(ch);
+}
+
+int __io_getchar()
+{
+    return 0;
+}
