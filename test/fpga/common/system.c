@@ -1,6 +1,5 @@
 #include <stdint.h>
 #include "uart_drv.h"
-#include "xprintf.h"
 #include "hazard3_csr.h"
 
 
