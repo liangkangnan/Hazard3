@@ -10,7 +10,8 @@
 
 module cmod_a7_soc #(
 	parameter DTM_TYPE   = "JTAG",  // Can be "JTAG" or "ECP5"
-	parameter SRAM_DEPTH = 1 << 15, // Default 32 kwords -> 128 kB
+	parameter FLASH_DEPTH = 1 << 15, // Default 32 kwords -> 128 kB
+	parameter SRAM_DEPTH = 1 << 13, // Default 8 kwords -> 32 kB
 	parameter CLK_MHZ    = 12       // For timer timebase
 ) (
 	// System clock + reset
@@ -272,11 +273,25 @@ hazard3_cpu_1port #(
 // ----------------------------------------------------------------------------
 // Bus fabric
 
-// - 128 kB SRAM at... 0x0000_0000
-// - System timer at.. 0x4000_0000
-// - UART at.......... 0x4000_4000
+// - 128 kB Flash at... 0x0000_0000
+// - 32 kB SRAM at..... 0x2000_0000
+// - System timer at... 0x4000_0000
+// - UART at........... 0x4000_4000
 
 // AHBL layer
+
+wire               flash_hready_resp;
+wire               flash_hready;
+wire               flash_hresp;
+wire [W_ADDR-1:0]  flash_haddr;
+wire               flash_hwrite;
+wire [1:0]         flash_htrans;
+wire [2:0]         flash_hsize;
+wire [2:0]         flash_hburst;
+wire [3:0]         flash_hprot;
+wire               flash_hmastlock;
+wire [W_DATA-1:0]  flash_hwdata;
+wire [W_DATA-1:0]  flash_hrdata;
 
 wire               sram0_hready_resp;
 wire               sram0_hready;
@@ -305,9 +320,9 @@ wire [W_DATA-1:0]  bridge_hwdata;
 wire [W_DATA-1:0]  bridge_hrdata;
 
 ahbl_splitter #(
-	.N_PORTS     (2),
-	.ADDR_MAP    (64'h40000000_00000000),
-	.ADDR_MASK   (64'he0000000_e0000000)
+	.N_PORTS     (3),
+	.ADDR_MAP    (96'h40000000_20000000_00000000),
+	.ADDR_MASK   (96'he0000000_e0000000_e0000000)
 ) splitter_u (
 	.clk             (clk),
 	.rst_n           (rst_n),
@@ -325,18 +340,18 @@ ahbl_splitter #(
 	.src_hwdata      (proc_hwdata   ),
 	.src_hrdata      (proc_hrdata   ),
 
-	.dst_hready_resp ({bridge_hready_resp , sram0_hready_resp}),
-	.dst_hready      ({bridge_hready      , sram0_hready     }),
-	.dst_hresp       ({bridge_hresp       , sram0_hresp      }),
-	.dst_haddr       ({bridge_haddr       , sram0_haddr      }),
-	.dst_hwrite      ({bridge_hwrite      , sram0_hwrite     }),
-	.dst_htrans      ({bridge_htrans      , sram0_htrans     }),
-	.dst_hsize       ({bridge_hsize       , sram0_hsize      }),
-	.dst_hburst      ({bridge_hburst      , sram0_hburst     }),
-	.dst_hprot       ({bridge_hprot       , sram0_hprot      }),
-	.dst_hmastlock   ({bridge_hmastlock   , sram0_hmastlock  }),
-	.dst_hwdata      ({bridge_hwdata      , sram0_hwdata     }),
-	.dst_hrdata      ({bridge_hrdata      , sram0_hrdata     })
+	.dst_hready_resp ({bridge_hready_resp , sram0_hready_resp, flash_hready_resp}),
+	.dst_hready      ({bridge_hready      , sram0_hready     , flash_hready}),
+	.dst_hresp       ({bridge_hresp       , sram0_hresp      , flash_hresp}),
+	.dst_haddr       ({bridge_haddr       , sram0_haddr      , flash_haddr}),
+	.dst_hwrite      ({bridge_hwrite      , sram0_hwrite     , flash_hwrite}),
+	.dst_htrans      ({bridge_htrans      , sram0_htrans     , flash_htrans}),
+	.dst_hsize       ({bridge_hsize       , sram0_hsize      , flash_hsize}),
+	.dst_hburst      ({bridge_hburst      , sram0_hburst     , flash_hburst}),
+	.dst_hprot       ({bridge_hprot       , sram0_hprot      , flash_hprot}),
+	.dst_hmastlock   ({bridge_hmastlock   , sram0_hmastlock  , flash_hmastlock}),
+	.dst_hwdata      ({bridge_hwdata      , sram0_hwdata     , flash_hwdata}),
+	.dst_hrdata      ({bridge_hrdata      , sram0_hrdata     , flash_hrdata})
 );
 
 // APB layer
@@ -426,6 +441,27 @@ apb_splitter #(
 // actually enter an infinite crash loop after reset if memory is
 // zero-initialised so don't leave the little guy hanging too long)
 
+// use sram as flash storage
+ahb_sync_sram #(
+	.DEPTH (FLASH_DEPTH)
+) flash (
+	.clk               (clk),
+	.rst_n             (rst_n),
+
+	.ahbls_hready_resp (flash_hready_resp),
+	.ahbls_hready      (flash_hready),
+	.ahbls_hresp       (flash_hresp),
+	.ahbls_haddr       (flash_haddr),
+	.ahbls_hwrite      (flash_hwrite),
+	.ahbls_htrans      (flash_htrans),
+	.ahbls_hsize       (flash_hsize),
+	.ahbls_hburst      (flash_hburst),
+	.ahbls_hprot       (flash_hprot),
+	.ahbls_hmastlock   (flash_hmastlock),
+	.ahbls_hwdata      (flash_hwdata),
+	.ahbls_hrdata      (flash_hrdata)
+);
+
 ahb_sync_sram #(
 	.DEPTH (SRAM_DEPTH)
 ) sram0 (
@@ -446,11 +482,7 @@ ahb_sync_sram #(
 	.ahbls_hrdata      (sram0_hrdata)
 );
 
-`ifdef SIMULATION
-uart_sim uart_u (
-`else
 uart_mini uart_u (
-`endif
 	.clk          (clk),
 	.rst_n        (rst_n),
 

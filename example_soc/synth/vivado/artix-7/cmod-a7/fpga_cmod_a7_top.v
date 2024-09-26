@@ -58,7 +58,8 @@ module fpga_cmod_a7_top (
     cmod_a7_soc #(
         .DTM_TYPE       ("JTAG"),
         .CLK_MHZ        (12),
-        .SRAM_DEPTH     (1 << 15)
+        .FLASH_DEPTH    (1 << 15),
+        .SRAM_DEPTH     (1 << 13)
     ) soc_u (
         .clk            (clk_sys),
         .rst_n          (rst_n_sys),
