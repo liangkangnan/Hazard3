@@ -11,9 +11,7 @@
 module cmod_a7_soc #(
 	parameter DTM_TYPE   = "JTAG",  // Can be "JTAG" or "ECP5"
 	parameter SRAM_DEPTH = 1 << 15, // Default 32 kwords -> 128 kB
-	parameter CLK_MHZ    = 12,      // For timer timebase
-
-	`include "cmod_a7_soc_config.vh"
+	parameter CLK_MHZ    = 12       // For timer timebase
 ) (
 	// System clock + reset
 	input wire               clk,
@@ -30,6 +28,9 @@ module cmod_a7_soc #(
 	output wire              uart_tx,
 	input  wire              uart_rx
 );
+
+localparam W_ADDR = 32;
+localparam W_DATA = 32;
 
 // ----------------------------------------------------------------------------
 // Processor debug
@@ -207,7 +208,11 @@ wire              unblock_out;
 wire              uart_irq;
 wire              timer_irq;
 
-hazard3_cpu_1port cpu (
+`include "cmod_a7_soc_config.vh"
+
+hazard3_cpu_1port #(
+`include "hazard3_config_inst.vh"
+) cpu (
 	.clk                        (clk),
 	.clk_always_on              (clk),
 	.rst_n                      (rst_n_cpu),
