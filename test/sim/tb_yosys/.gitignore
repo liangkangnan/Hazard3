@@ -2,5 +2,5 @@ tb
 dut.cpp
 build.*
 tb_cmod_a7_top
-
+tb_cmod_a7_2p_top
 
