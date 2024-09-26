@@ -3,7 +3,7 @@
 #include "hazard3_irq.h"
 #include "uart_drv.h"
 #include "mach_timer_drv.h"
-#include "xprintf.h"
+#include "printf.h"
 
 // 1s
 #define TIMER_INTERVAL (1000 * 1000)
@@ -13,9 +13,8 @@ static volatile uint8_t irq_assert;
 int main()
 {
 	uart_init(115200);
-    xdev_out(uart_putc);
 
-    xprintf("hello timer!\n");
+    printf("hello timer!\n");
 
     global_irq_enable(true);
     mach_timer_irq_enable(true);
@@ -28,7 +27,7 @@ int main()
     while (1) {
         if (irq_assert) {
             irq_assert = 0;
-            xprintf("mach timer alarm\n");
+            printf("mach timer alarm\n");
         }
     }
 
