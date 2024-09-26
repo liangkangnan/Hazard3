@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 #include "uart_drv.h"
-#include "xprintf.h"
+#include "printf.h"
 
 #define setStats(x)
 
@@ -13,6 +13,6 @@
 	__csr_tmp_u32; \
 })
 
-#define debug_printf xprintf
+#define debug_printf printf
 
 #endif

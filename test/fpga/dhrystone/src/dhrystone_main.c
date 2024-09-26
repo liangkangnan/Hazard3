@@ -73,7 +73,6 @@ int main (int argc, char** argv)
 
   /* Initializations */
   uart_init(115200);
-  xdev_out(uart_putc);
   Next_Ptr_Glob = (Rec_Pointer) alloca (sizeof (Rec_Type));
   Ptr_Glob = (Rec_Pointer) alloca (sizeof (Rec_Type));
 
