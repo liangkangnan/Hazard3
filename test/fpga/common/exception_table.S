@@ -91,7 +91,7 @@ isr_riscv_machine_exception:
 
     // Restore mscratch to 0 to avoid tripping next exception
     csrrw ra, mscratch, zero
-    mret
+    ret
 
 decl_isr isr_riscv_machine_instr_align_exception
 decl_isr isr_riscv_machine_instr_fault_exception
@@ -131,4 +131,3 @@ __halt_on_unhandled_exception:
 __nested_exception:
 1:
     j 1b
-

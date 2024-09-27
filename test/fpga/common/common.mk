@@ -17,7 +17,7 @@ CCFLAGS      += -Wl,--wrap=printf -Wl,--wrap=vprintf -Wl,--wrap=puts -Wl,--wrap=
 
 SRCS += ../drivers/uart/src/uart_drv.c
 SRCS += ../drivers/mach_timer/src/mach_timer_drv.c
-SRCS += ../common/crt0.S ../common/exception_table.S ../common/system.c ../common/exception_handler.c
+SRCS += ../common/crt0.S ../common/exception_table.S ../common/external_irq_table.S ../common/system.c ../common/exception_handler.c
 SRCS += ../common/syscalls.c
 SRCS += ../common/printf.c
 SRCS += ../common/wrap.c

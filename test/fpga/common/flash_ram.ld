@@ -135,6 +135,8 @@ SECTIONS
 
 	.data           :
 	{
+        . = ALIGN(4);
+        *(.time_critical*)
     	*(.gnu.linkonce.r.*)
     	*(.data .data.*)
     	*(.gnu.linkonce.d.*)
