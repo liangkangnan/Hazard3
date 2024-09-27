@@ -7,7 +7,7 @@ extern void *__real_calloc(size_t count, size_t size);
 extern void *__real_realloc(void *mem, size_t size);
 extern void __real_free(void *mem);
 
-extern char __StackLimit; /* Set by linker.  */
+extern char _heap_end; /* Set by linker.  */
 
 int __wrap_printf(const char* format, ...)
 {
@@ -60,7 +60,7 @@ int __wrap_putchar(int c)
 
 static inline void check_alloc(void *mem, size_t size)
 {
-    if (!mem || (((char *)mem) + size) > &__StackLimit) {
+    if (!mem || (((char *)mem) + size) > &_heap_end) {
         panic("Out of memory");
     }
 }

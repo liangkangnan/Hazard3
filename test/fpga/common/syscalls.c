@@ -7,7 +7,7 @@
 #include <sys/time.h>
 #include <sys/times.h>
 
-extern char __StackLimit; /* Set by linker.  */
+extern char _heap_end; /* Set by linker.  */
 
 /* Variables */
 extern int __io_putchar(int ch) __attribute__((weak));
@@ -155,21 +155,21 @@ int _execve(char *name, char **argv, char **env)
 
 __attribute__((weak)) void *_sbrk(int incr)
 {
-    extern char end; /* Set by linker.  */
+    extern char _end; /* Set by linker.  */
     static char *heap_end;
     char *prev_heap_end;
 
     if (heap_end == 0)
-        heap_end = &end;
+        heap_end = &_end;
 
     prev_heap_end = heap_end;
     char *next_heap_end = heap_end + incr;
 
-    if (next_heap_end > (&__StackLimit)) {
-        if (heap_end == &__StackLimit) {
+    if (next_heap_end > (&_heap_end)) {
+        if (heap_end == &_heap_end) {
             return (char *) -1;
         }
-        next_heap_end = &__StackLimit;
+        next_heap_end = &_heap_end;
     }
 
     heap_end = next_heap_end;

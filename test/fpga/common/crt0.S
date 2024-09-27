@@ -1,11 +1,10 @@
-#define RVCSR_MEICONTEXT_OFFSET (0x00000be5)
+#define RVCSR_MEICONTEXT_OFFSET         (0x00000be5)
 #define RVCSR_MEICONTEXT_CLEARTS_BITS   (0x00000002)
-#define RVCSR_MEINEXT_OFFSET (0x00000be4)
-#define RVCSR_MEINEXT_UPDATE_BITS   (0x00000001)
-#define RVCSR_MEIFA_OFFSET (0x00000be2)
-#define RVCSR_MIE_MEIE_BITS   (0x00000800)
-#define RVCSR_MSTATUS_MIE_BITS   (0x00000008)
-
+#define RVCSR_MEINEXT_OFFSET            (0x00000be4)
+#define RVCSR_MEINEXT_UPDATE_BITS       (0x00000001)
+#define RVCSR_MEIFA_OFFSET              (0x00000be2)
+#define RVCSR_MIE_MEIE_BITS             (0x00000800)
+#define RVCSR_MSTATUS_MIE_BITS          (0x00000008)
 
 .section .vectors, "ax"
 
@@ -38,9 +37,7 @@ j isr_riscv_machine_external_irq
 j _reset_handler
 .option pop
 
-// External IRQ dispatch, inlined into the last vector table slot. Note if
-// this code is modified, the VTABLE_FIRST_IRQ define in platform_defs.h also
-// needs to be modified (it identifies the beginning of the soft vector table)
+// External IRQ dispatch, inlined into the last vector table slot.
 .global isr_riscv_machine_external_irq
 .weak isr_riscv_machine_external_irq
 isr_riscv_machine_external_irq:
@@ -212,51 +209,41 @@ _entry_point:
 // - clears .bss
 // - calls runtime_init
 // - calls main
-// - calls exit (which should eventually hang the processor via _exit)
 
 _reset_handler:
 .option push
 .option norelax
     la gp, __global_pointer$
 .option pop
-    la sp, __StackTop
+    la sp, _stack_top
     // Leave interrupts globally disabled for now, we will set that up later
     // in runtime_init_per_core_h3_irq_registers. Still worth installing the vector table:
     la a0, __vectors + 1
     csrw mtvec, a0
     csrci mcountinhibit, 0x5
 
-    // Only core 0 should run the C runtime startup code; core 1 is normally
-    // sleeping in the bootrom at this point but check to be sure
-    //csrr a0, mhartid
-    //bnez a0, reenter_bootrom
-
-    // In a NO_FLASH binary, don't perform .data etc copy, since it's loaded
-    // in-place by the SRAM load. Still need to clear .bss
-#if 1
-    la a4, data_cpy_table
-
-    // assume there is at least one entry
+copy_data:
+	/* Load data section from flash to RAM */
+	la a0, _data_lma
+	la a1, _data_vma
+	la a2, _edata
+	bgeu a1, a2, clear_bss
 1:
-    lw a1, 0(a4)
-    beqz a1, 2f
-    lw a2, 4(a4)
-    lw a3, 8(a4)
-    addi a4, a4, 12
-    jal data_cpy
-    j 1b
-2:
-#endif
+	lw t0, (a0)
+	sw t0, (a1)
+	addi a0, a0, 4
+	addi a1, a1, 4
+	bltu a1, a2, 1b
 
-    // Zero out the BSS
-    la a1, __bss_start__
-    la a2, __bss_end__
-    j bss_fill_test
-bss_fill_loop:
-    sw zero, (a1)
-    addi a1, a1, 4
-bss_fill_test:
-    bne a1, a2, bss_fill_loop
+clear_bss:
+	/* Clear bss section */
+	la a0, _sbss
+	la a1, _ebss
+	bgeu a0, a1, platform_entry
+1:
+	sw zero, (a0)
+	addi a0, a0, 4
+	bltu a0, a1, 1b
 
 platform_entry: // symbol for stack traces
     // Use `call` pseudo-instruction instead of a bare `jal` so that the
@@ -265,37 +252,9 @@ platform_entry: // symbol for stack traces
     // call runtime_init_per_core_h3_irq_registers (now called in runtime_init)
     call runtime_init
     call main
-    //call exit
-    // exit should not return.  If it does, hang the core.
-    // (fall thru into our hang _exit impl
-1: // separate label because _exit can be moved out of branch range
+1:
     ebreak
     j 1b
-
-data_cpy_loop:
-    lw a0, (a1)
-    sw a0, (a2)
-    addi a1, a1, 4
-    addi a2, a2, 4
-data_cpy:
-    bltu a2, a3, data_cpy_loop
-    ret
-
-.align 2
-data_cpy_table:
-.word __etext
-.word __data_start__
-.word __data_end__
-
-.word __scratch_x_source__
-.word __scratch_x_start__
-.word __scratch_x_end__
-
-.word __scratch_y_source__
-.word __scratch_y_start__
-.word __scratch_y_end__
-
-.word 0 // null terminator
 
 // ----------------------------------------------------------------------------
 // Provide safe defaults for _exit and runtime_init
@@ -339,30 +298,3 @@ runtime_init_per_core_h3_irq_registers:
     // exceptions in isr_riscv_machine_exception:
     csrw mscratch, zero
     ret
-
-// ----------------------------------------------------------------------------
-// Stack/heap dummies to set size
-
-// Prior to SDK 1.5.1 these were `.section .stack` without the `, "a"`... Clang linker gives a warning about this,
-// however setting it explicitly to `, "a"` makes GCC *now* discard the section unless it is also KEEP. This
-// seems like very surprising behavior!
-//
-// Strictly the most correct thing to do (as .stack and .heap are unreferenced) is to mark them as "a", and also KEEP, which
-// works correctly for both GCC and Clang, however doing so may break anyone who already has custom linker scripts without
-// the KEEP. Therefore we will only add the "a" on Clang, but will also use KEEP to our own linker scripts.
-
-.macro spacer_section name
-.section \name
-.endm
-
-spacer_section .stack
-// align to allow for memory protection (although this alignment is pretty much ignored by linker script)
-.p2align 5
-    .equ StackSize, 0x800
-.space StackSize
-
-spacer_section .heap
-.p2align 2
-    .equ HeapSize, 0x800
-.space HeapSize
-
