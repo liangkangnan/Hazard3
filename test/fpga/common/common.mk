@@ -44,6 +44,7 @@ $(APP).bin: $(APP).elf
 	$(CROSS_PREFIX)objcopy -O binary $^ $@
 	$(CROSS_PREFIX)objdump -h $^ > $(APP).dis
 	$(CROSS_PREFIX)objdump -S $^ >> $(APP).dis
+	$(CROSS_PREFIX)size --format=berkeley $^
 
 $(APP).elf: $(SRCS) $(wildcard %.h)
 	$(CROSS_PREFIX)gcc $(CCFLAGS) $(SRCS) -T $(LDSCRIPT) $(addprefix -I,$(INCDIR)) -o $@
