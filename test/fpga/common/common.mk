@@ -21,6 +21,7 @@ SRCS += ../common/crt0.S ../common/exception_table.S ../common/external_irq_tabl
 SRCS += ../common/syscalls.c
 SRCS += ../common/printf.c
 SRCS += ../common/wrap.c
+SRCS += ../common/delay.c
 
 INCDIR += ../drivers/uart/inc
 INCDIR += ../drivers/mach_timer/inc
