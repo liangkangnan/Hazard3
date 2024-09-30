@@ -120,6 +120,9 @@ module hazard3_csr #(
 	input  wire [W_DATA-1:0]   trig_cfg_rdata,
 	output wire                trig_m_en,
 
+	// custom signal
+	output wire [XLEN-1:0]     spbottom,
+
 	// Other CSR-specific signalling
 	output wire                trap_wfi,
 	input  wire                instr_ret
@@ -405,6 +408,23 @@ end
 assign pwr_allow_sleep_on_block = msleep_sleeponblock;
 assign pwr_allow_power_down = msleep_powerdown;
 assign pwr_allow_clkgate = msleep_deepsleep;
+
+// ----------------------------------------------------------------------------
+// Custom sp bottom CSRs
+
+reg [XLEN-1:0] mspbottom;
+
+always @ (posedge clk or negedge rst_n) begin
+	if (!rst_n) begin
+		mspbottom <= X0;
+	end else begin
+		if (wen_m_mode && addr == MSPBOTTOM) begin
+			mspbottom <= wdata_update;
+		end
+	end
+end
+
+assign spbottom = mspbottom;
 
 // ----------------------------------------------------------------------------
 // Counters
@@ -1114,6 +1134,11 @@ always @ (*) begin
 			msleep_powerdown,
 			msleep_deepsleep
 		};
+	end
+
+	MSPBOTTOM: if (CSR_M_TRAP) begin
+		decode_match = match_mrw;
+		rdata = mspbottom;
 	end
 
 	default: begin end

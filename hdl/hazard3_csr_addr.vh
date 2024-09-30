@@ -168,6 +168,8 @@ localparam MEIPRA         = 12'hbe3; // External interrupt priority array
 localparam MEINEXT        = 12'hbe4; // Next external interrupt
 localparam MEICONTEXT     = 12'hbe5; // External interrupt context register
 
+localparam MSPBOTTOM      = 12'hbea; // SP bottom register
+
 localparam MSLEEP         = 12'hbf0; // M-mode sleep control register
 
 // ----------------------------------------------------------------------------

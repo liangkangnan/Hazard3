@@ -104,6 +104,7 @@ localparam EXCEPT_STORE_FAULT    = 4'h7;
 localparam EXCEPT_ECALL_U        = 4'h8;
 localparam EXCEPT_MRET           = 4'ha; // Not really an exception, but handled like one
 localparam EXCEPT_ECALL_M        = 4'hb;
+localparam EXCEPT_SP_OVERFLOW    = 4'he;
 
 // Operations for M extension (these are just instr[14:12])
 

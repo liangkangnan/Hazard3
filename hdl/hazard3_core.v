@@ -923,6 +923,7 @@ wire [W_DATA-1:0] x_csr_wdata = d_csr_w_imm ?
 
 wire [W_DATA-1:0] x_csr_rdata;
 wire              x_csr_illegal_access;
+wire sp_overflow;
 
 // "Previous" refers to next-most-recent instruction to be in D/X, i.e. the
 // most recent instruction to reach stage M (which may or may not still be in M).
@@ -967,7 +968,8 @@ wire [W_EXCEPT-1:0] x_except =
 	x_unaligned_addr &&  x_memop_write                       ? EXCEPT_STORE_ALIGN    :
 	x_unaligned_addr && !x_memop_write                       ? EXCEPT_LOAD_ALIGN     :
 	x_loadstore_pmp_fail && (d_memop_is_amo || bus_hwrite_d) ? EXCEPT_STORE_FAULT    :
-	x_loadstore_pmp_fail                                     ? EXCEPT_LOAD_FAULT     : d_except;
+	x_loadstore_pmp_fail                                     ? EXCEPT_LOAD_FAULT     :
+	sp_overflow                                              ? EXCEPT_SP_OVERFLOW    : d_except;
 
 // If an instruction causes an exceptional condition we do not consider it to have retired.
 wire x_except_counts_as_retire =
@@ -988,6 +990,7 @@ wire m_pwr_allow_clkgate;
 wire m_pwr_allow_power_down;
 wire m_pwr_allow_sleep_on_block;
 wire m_wfi_wakeup_req;
+wire [W_DATA-1:0] spbottom;
 
 hazard3_csr #(
 	.XLEN            (W_DATA),
@@ -1065,6 +1068,8 @@ hazard3_csr #(
 	.trig_cfg_wdata             (x_trig_cfg_wdata),
 	.trig_cfg_rdata             (x_trig_cfg_rdata),
 	.trig_m_en                  (x_trig_m_en),
+
+	.spbottom					(spbottom),
 
 	// Other CSR-specific signalling
 	.trap_wfi                   (x_trap_wfi),
@@ -1404,6 +1409,29 @@ hazard3_regfile_1w2r #(
 	.wdata  (m_result),
 	.wen    (m_reg_wen)
 );
+
+// Stack overflow detect
+
+reg [W_DATA-1:0] sp_reg;
+reg sp_overflow_q;
+
+always @ (posedge clk or negedge rst_n) begin
+	if (!rst_n) begin
+		sp_reg <= {W_DATA{1'b0}};
+		sp_overflow_q <= 1'b0;
+	end else begin
+		if (m_reg_wen && (xm_rd == 5'h02)) begin
+			sp_reg <= m_result;
+		end
+		if (sp_overflow)
+			sp_overflow_q <= 1'b1;
+		if (~spbottom[0])
+			sp_overflow_q <= 1'b0;
+	end
+end
+
+// only trigger one clock
+assign sp_overflow = (!sp_overflow_q && spbottom[0] && (sp_reg <= {spbottom[31:2], 2'h0})) ? 1'b1 : 1'b0;
 
 `ifdef RISCV_FORMAL
 `include "hazard3_rvfi_monitor.vh"
