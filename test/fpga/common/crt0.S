@@ -5,6 +5,7 @@
 #define RVCSR_MEIFA_OFFSET              (0x00000be2)
 #define RVCSR_MIE_MEIE_BITS             (0x00000800)
 #define RVCSR_MSTATUS_MIE_BITS          (0x00000008)
+#define RVCSR_MSPBOTTOM_OFFSET          (0x00000bea)
 
 .section .vectors, "ax"
 
@@ -87,6 +88,10 @@ _reset_handler:
     la gp, __global_pointer$
 .option pop
     la sp, _stack_top
+    // Enable stack overflow detect
+    la a0, _stack_bottom
+    addi a0, a0, 1
+    csrw RVCSR_MSPBOTTOM_OFFSET, a0
     // Leave interrupts globally disabled for now, we will set that up later
     // in runtime_init_per_core_h3_irq_registers. Still worth installing the vector table:
     la a0, __vectors + 1

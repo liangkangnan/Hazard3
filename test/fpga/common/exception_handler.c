@@ -4,6 +4,7 @@
 #include "printf.h"
 #include "uart_drv.h"
 #include "hazard3_csr.h"
+#include "sections.h"
 
 static void printf_exception_info()
 {
@@ -88,6 +89,27 @@ void isr_riscv_machine_ecall_smode_exception()
 }
 
 void isr_riscv_machine_ecall_mmode_exception()
+{
+    printf_exception_info();
+    printf("%s\n", __func__);
+    while (1);
+}
+
+void isr_riscv_machine_sp_overflow_exception()
+{
+    printf_exception_info();
+    printf("%s\n", __func__);
+    while (1);
+}
+
+void __time_critical_func(__unhandled_exception)()
+{
+    printf_exception_info();
+    printf("%s\n", __func__);
+    while (1);
+}
+
+void __time_critical_func(__nested_exception)()
 {
     printf_exception_info();
     printf("%s\n", __func__);

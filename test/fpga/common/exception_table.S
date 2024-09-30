@@ -26,6 +26,9 @@ __riscv_exception_table:
 .word isr_riscv_machine_ecall_smode_exception
 .word __unhandled_exception // reserved
 .word isr_riscv_machine_ecall_mmode_exception
+.word __unhandled_exception // reserved
+.word __unhandled_exception // reserved
+.word isr_riscv_machine_sp_overflow_exception
 
 // mscratch = 0 outside of exception handler. mscratch = user ra during
 // exception handler. Assume 0 is not a valid ra.
@@ -59,7 +62,7 @@ isr_riscv_machine_exception:
 
     // Using unsigned comparison for double-ended bounds check
     csrr ra, mcause
-    li t6, 11 // XCAUSE_ECALL_M
+    li t6, 14 // XCAUSE_SP_OVERFLOW
     bltu t6, ra, __unhandled_exception
 
     // Enter exception through table
@@ -104,6 +107,7 @@ decl_isr isr_riscv_machine_store_fault_exception
 decl_isr isr_riscv_machine_ecall_umode_exception
 decl_isr isr_riscv_machine_ecall_smode_exception
 decl_isr isr_riscv_machine_ecall_mmode_exception
+decl_isr isr_riscv_machine_sp_overflow_exception
     // fall through
 
 // Reach here when executing an exception that did not have a non-default
@@ -112,6 +116,7 @@ decl_isr isr_riscv_machine_ecall_mmode_exception
 // core forever. You can check `mcause` and `mepc` to see what happened and
 // where.
 .global __unhandled_exception
+.weak __unhandled_exception
 __unhandled_exception:
     // Restore original registers and stack pointer so debugger can backtrace
     csrr ra, mscratch
@@ -121,6 +126,7 @@ __unhandled_exception:
     // here; the entry point can appear labelled with the name of any one of the
     // unhandled exceptions, which is less clear.
 .global __halt_on_unhandled_exception
+.weak __halt_on_unhandled_exception
 __halt_on_unhandled_exception:
 1:
     j 1b
@@ -128,6 +134,8 @@ __halt_on_unhandled_exception:
 // Detected an exception occurring whilst running an exception handler. State
 // of original exception was trashed by new exception, so this is not
 // recoverable. Best we can do is to halt now to avoid further trashing.
+.global __nested_exception
+.weak __nested_exception
 __nested_exception:
 1:
     j 1b
