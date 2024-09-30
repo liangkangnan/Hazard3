@@ -427,6 +427,23 @@ end
 assign spbottom = mspbottom;
 
 // ----------------------------------------------------------------------------
+// Custom software interrupt CSRs
+
+reg mswint_trigger;
+
+always @ (posedge clk or negedge rst_n) begin
+	if (!rst_n) begin
+		mswint_trigger <= 1'b0;
+	end else begin
+		if (wen_m_mode && addr == MSWINT) begin
+			mswint_trigger <= wdata_update[0];
+		end else begin
+			mswint_trigger <= 1'b0;
+		end
+	end
+end
+
+// ----------------------------------------------------------------------------
 // Counters
 
 reg mcountinhibit_cy;
@@ -1141,6 +1158,11 @@ always @ (*) begin
 		rdata = mspbottom;
 	end
 
+	MSWINT: if (CSR_M_TRAP) begin
+		decode_match = match_mrw;
+		rdata = 32'h00000000;
+	end
+
 	default: begin end
 	endcase
 end
@@ -1282,7 +1304,7 @@ always @ (posedge clk_always_on or negedge rst_n) begin
 		irq_software_r <= 1'b0;
 		irq_timer_r <= 1'b0;
 	end else begin
-		irq_software_r <= irq_software;
+		irq_software_r <= irq_software | mswint_trigger;
 		irq_timer_r <= irq_timer;
 	end
 end
