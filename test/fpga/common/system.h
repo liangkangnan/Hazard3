@@ -21,6 +21,11 @@ static inline void riscv_set_sp_bottom(uint32_t addr)
     write_csr(hazard3_csr_mspbottom, addr);
 }
 
+static inline void riscv_trigger_soft_irq()
+{
+    write_csr(hazard3_csr_mswint, 0x1);
+}
+
 void clock_init();
 uint32_t get_core_clock_hz();
 uint32_t get_uart_clock_hz();

@@ -14,6 +14,7 @@
 #define hazard3_csr_meinext    0xbe4 // Next external interrupt
 #define hazard3_csr_meicontext 0xbe5 // External interrupt context register
 
+#define hazard3_csr_mswint     0xbe9 // M-mode software interrupt register
 #define hazard3_csr_mspbottom  0xbea // M-mode sp bottom register
 #define hazard3_csr_msleep     0xbf0 // M-mode sleep control register
 
