@@ -11,6 +11,18 @@
 #include "dut.cpp"
 #include <cxxrtl/cxxrtl_vcd.h>
 
+#define FLASH_START 0x00000000
+#define FLASH_SIZE  (128 * 1024)
+#define FLASH_END   (FLASH_START + FLASH_SIZE - 1)
+
+#define IRAM_START  0x10000000
+#define IRAM_SIZE   (128 * 1024)
+#define IRAM_END    (IRAM_START + IRAM_SIZE - 1)
+
+#define DRAM_START  0x20000000
+#define DRAM_SIZE   (32 * 1024)
+#define DRAM_END    (DRAM_START + DRAM_SIZE - 1)
+
 // MEM_KB define in Makefile
 #define MEM_SIZE (MEM_KB * 1024)
 
@@ -37,16 +49,18 @@ static int wait_for_connection(int server_fd, uint16_t port, struct sockaddr *so
 // -----------------------------------------------------------------------------
 
 const char *help_str =
-"Usage: testbench_verilator [--bin x.bin] [--port n] [--vcd x.vcd]\\\n"
+"Usage: testbench_verilator [--bin x.bin] [--binaddr addr] [--port n] [--vcd x.vcd]\\\n"
 "                           [--cycles n] [--retcode]\n"
 "\n"
-"    --bin x.bin      : Flat binary file loaded to address 0x0 in RAM\n"
+"    --bin x.bin      : Flat binary file to be loaded\n"
+"    --binaddr addr   : Flat binary file loaded to address [addr]\n"
 "    --vcd x.vcd      : Path to dump waveforms to\n"
 "    --cycles n       : Maximum number of cycles to run before exiting.\n"
 "                       Default is 0 (no maximum).\n"
 "    --port n         : Port number to listen for openocd remote bitbang. Sim\n"
 "                       runs in lockstep with JTAG bitbang, not free-running.\n"
-"    --retcode         : Testbench's return code is the return code written to\n"
+"    --dumpall        : Dump wave all the time.\n"
+"    --retcode        : Testbench's return code is the return code written to\n"
 "                       IO_EXIT by the CPU, or -1 if timed out.\n"
 ;
 
@@ -60,9 +74,11 @@ int main(int argc, char **argv, char **env)
 {
     bool dump_waves = false;
     bool load_bin = false;
+    bool dump_all = false;
 	std::string waves_path;
     std::string bin_path;
     int64_t max_cycles = 0;
+    uint32_t binaddr = 0;
     uint16_t port = 0;
     bool propagate_return_code = false;
     uint32_t i, j;
@@ -79,6 +95,11 @@ int main(int argc, char **argv, char **env)
                 exit_help("Option --bin requires an argument\n");
             load_bin = true;
             bin_path = argv[i + 1];
+            i += 1;
+        } else if (s == "--binaddr") {
+            if (argc - i < 2)
+                exit_help("Option --binaddr requires an argument\n");
+            binaddr = std::stol(argv[i + 1], 0, 0);
             i += 1;
         } else if (s == "--vcd") {
             if (argc - i < 2)
@@ -98,10 +119,24 @@ int main(int argc, char **argv, char **env)
             i += 1;
 		} else if (s == "--retcode") {
             propagate_return_code = true;
+		} else if (s == "--dumpall") {
+            dump_all = true;
         } else {
             std::cerr << "Unrecognised argument " << s << "\n";
             exit_help("");
         }
+    }
+
+    // 检查bin addr范围
+    if (binaddr >= FLASH_START && binaddr <= FLASH_END) {
+        ;
+    } else if (binaddr >= IRAM_START && binaddr <= IRAM_END) {
+        ;
+    } else if (binaddr >= DRAM_START && binaddr <= DRAM_END) {
+        ;
+    } else {
+        fprintf(stderr, "bin addr error!!!\n");
+        exit(-1);
     }
 
 	cxxrtl_design::p_tb__top top;
@@ -139,9 +174,21 @@ int main(int argc, char **argv, char **env)
             word += bin_memory[i + 2] << 16;
             word += bin_memory[i + 3] << 24;
             #ifdef HAS_FLASH
-                top.memory_p_u__fpga_2e_soc__u_2e_flash_2e_sram_2e_behav__mem_2e_mem[j].set<uint32_t>(word);
+                if (binaddr >= FLASH_START && binaddr <= FLASH_END)
+                    top.memory_p_flash_2e_sram_2e_behav__mem_2e_mem[j].set<uint32_t>(word);
+                else if (binaddr >= IRAM_START && binaddr <= IRAM_END)
+                    top.memory_p_u__fpga_2e_soc__u_2e_iram_2e_sram_2e_behav__mem_2e_mem[j].set<uint32_t>(word);
+                else if (binaddr >= DRAM_START && binaddr <= DRAM_END)
+                    top.memory_p_u__fpga_2e_soc__u_2e_dram_2e_sram_2e_behav__mem_2e_mem[j].set<uint32_t>(word);
+                else
+                    fprintf(stderr, "bin addr error!!!\n");
             #else
-                top.memory_p_u__fpga_2e_soc__u_2e_sram0_2e_sram_2e_behav__mem_2e_mem[j].set<uint32_t>(word);
+                if (binaddr >= IRAM_START && binaddr <= IRAM_END)
+                    top.memory_p_u__fpga_2e_soc__u_2e_iram_2e_sram_2e_behav__mem_2e_mem[j].set<uint32_t>(word);
+                else if (binaddr >= DRAM_START && binaddr <= DRAM_END)
+                    top.memory_p_u__fpga_2e_soc__u_2e_dram_2e_sram_2e_behav__mem_2e_mem[j].set<uint32_t>(word);
+                else
+                    fprintf(stderr, "bin addr error!!!\n");
             #endif
         }
         word = 0;
@@ -149,9 +196,21 @@ int main(int argc, char **argv, char **env)
             word += bin_memory[(bin_size / 4) * 4 + i] << (i * 8);
         }
         #ifdef HAS_FLASH
-            top.memory_p_u__fpga_2e_soc__u_2e_flash_2e_sram_2e_behav__mem_2e_mem[j].set<uint32_t>(word);
+            if (binaddr >= FLASH_START && binaddr <= FLASH_END)
+                top.memory_p_flash_2e_sram_2e_behav__mem_2e_mem[j].set<uint32_t>(word);
+            else if (binaddr >= IRAM_START && binaddr <= IRAM_END)
+                top.memory_p_u__fpga_2e_soc__u_2e_iram_2e_sram_2e_behav__mem_2e_mem[j].set<uint32_t>(word);
+            else if (binaddr >= DRAM_START && binaddr <= DRAM_END)
+                top.memory_p_u__fpga_2e_soc__u_2e_dram_2e_sram_2e_behav__mem_2e_mem[j].set<uint32_t>(word);
+            else
+                fprintf(stderr, "bin addr error!!!\n");
         #else
-            top.memory_p_u__fpga_2e_soc__u_2e_sram0_2e_sram_2e_behav__mem_2e_mem[j].set<uint32_t>(word);
+            if (binaddr >= IRAM_START && binaddr <= IRAM_END)
+                top.memory_p_u__fpga_2e_soc__u_2e_iram_2e_sram_2e_behav__mem_2e_mem[j].set<uint32_t>(word);
+            else if (binaddr >= DRAM_START && binaddr <= DRAM_END)
+                top.memory_p_u__fpga_2e_soc__u_2e_dram_2e_sram_2e_behav__mem_2e_mem[j].set<uint32_t>(word);
+            else
+                fprintf(stderr, "bin addr error!!!\n");
         #endif
     }
 
@@ -207,7 +266,7 @@ int main(int argc, char **argv, char **env)
 	for (int64_t cycle = 0; cycle < max_cycles || max_cycles == 0; ++cycle) {
 		top.p_clk.set<bool>(false);
 		top.step();
-		if (dump_waves)
+		if (dump_waves && (dump_all || top.p_dump__wave__en.get<uint8_t>()))
 			vcd.sample(cycle * 2);
 		top.p_clk.set<bool>(true);
 		top.step();
@@ -282,7 +341,7 @@ int main(int argc, char **argv, char **env)
 			}
 		}
 
-		if (dump_waves) {
+		if (dump_waves && (dump_all || top.p_dump__wave__en.get<uint8_t>())) {
 			// The extra step() is just here to get the bus responses to line up nicely
 			// in the VCD (hopefully is a quick update)
 			top.step();
