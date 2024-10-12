@@ -174,14 +174,18 @@ int main(int argc, char **argv, char **env)
             word += bin_memory[i + 2] << 16;
             word += bin_memory[i + 3] << 24;
             #ifdef HAS_FLASH
-                if (binaddr >= FLASH_START && binaddr <= FLASH_END)
-                    top.memory_p_flash_2e_sram_2e_behav__mem_2e_mem[j].set<uint32_t>(word);
-                else if (binaddr >= IRAM_START && binaddr <= IRAM_END)
+                if (binaddr >= FLASH_START && binaddr <= FLASH_END) {
+                    top.memory_p_flash_2e_sram_2e_behav__mem_2e_mem[j++].set<uint8_t>(bin_memory[i + 0]);
+                    top.memory_p_flash_2e_sram_2e_behav__mem_2e_mem[j++].set<uint8_t>(bin_memory[i + 1]);
+                    top.memory_p_flash_2e_sram_2e_behav__mem_2e_mem[j++].set<uint8_t>(bin_memory[i + 2]);
+                    top.memory_p_flash_2e_sram_2e_behav__mem_2e_mem[j].set<uint8_t>(bin_memory[i + 3]);
+                } else if (binaddr >= IRAM_START && binaddr <= IRAM_END) {
                     top.memory_p_u__fpga_2e_soc__u_2e_iram_2e_sram_2e_behav__mem_2e_mem[j].set<uint32_t>(word);
-                else if (binaddr >= DRAM_START && binaddr <= DRAM_END)
+                } else if (binaddr >= DRAM_START && binaddr <= DRAM_END) {
                     top.memory_p_u__fpga_2e_soc__u_2e_dram_2e_sram_2e_behav__mem_2e_mem[j].set<uint32_t>(word);
-                else
+                } else {
                     fprintf(stderr, "bin addr error!!!\n");
+                }
             #else
                 if (binaddr >= IRAM_START && binaddr <= IRAM_END)
                     top.memory_p_u__fpga_2e_soc__u_2e_iram_2e_sram_2e_behav__mem_2e_mem[j].set<uint32_t>(word);
@@ -191,27 +195,34 @@ int main(int argc, char **argv, char **env)
                     fprintf(stderr, "bin addr error!!!\n");
             #endif
         }
-        word = 0;
-        for (i = 0; i < bin_size % 4; i++) {
-            word += bin_memory[(bin_size / 4) * 4 + i] << (i * 8);
+        // 剩余数据（非4字节对齐）
+        if (bin_size % 4) {
+            word = 0;
+            for (i = 0; i < bin_size % 4; i++) {
+                word += bin_memory[(bin_size / 4) * 4 + i] << (i * 8);
+            }
+            #ifdef HAS_FLASH
+                if (binaddr >= FLASH_START && binaddr <= FLASH_END) {
+                    top.memory_p_flash_2e_sram_2e_behav__mem_2e_mem[j++].set<uint8_t>((word >> 0) & 0xff);
+                    top.memory_p_flash_2e_sram_2e_behav__mem_2e_mem[j++].set<uint8_t>((word >> 8) & 0xff);
+                    top.memory_p_flash_2e_sram_2e_behav__mem_2e_mem[j++].set<uint8_t>((word >> 16) & 0xff);
+                    top.memory_p_flash_2e_sram_2e_behav__mem_2e_mem[j].set<uint8_t>((word >> 24) & 0xff);
+                } else if (binaddr >= IRAM_START && binaddr <= IRAM_END) {
+                    top.memory_p_u__fpga_2e_soc__u_2e_iram_2e_sram_2e_behav__mem_2e_mem[j].set<uint32_t>(word);
+                } else if (binaddr >= DRAM_START && binaddr <= DRAM_END) {
+                    top.memory_p_u__fpga_2e_soc__u_2e_dram_2e_sram_2e_behav__mem_2e_mem[j].set<uint32_t>(word);
+                } else {
+                    fprintf(stderr, "bin addr error!!!\n");
+                }
+            #else
+                if (binaddr >= IRAM_START && binaddr <= IRAM_END)
+                    top.memory_p_u__fpga_2e_soc__u_2e_iram_2e_sram_2e_behav__mem_2e_mem[j].set<uint32_t>(word);
+                else if (binaddr >= DRAM_START && binaddr <= DRAM_END)
+                    top.memory_p_u__fpga_2e_soc__u_2e_dram_2e_sram_2e_behav__mem_2e_mem[j].set<uint32_t>(word);
+                else
+                    fprintf(stderr, "bin addr error!!!\n");
+            #endif
         }
-        #ifdef HAS_FLASH
-            if (binaddr >= FLASH_START && binaddr <= FLASH_END)
-                top.memory_p_flash_2e_sram_2e_behav__mem_2e_mem[j].set<uint32_t>(word);
-            else if (binaddr >= IRAM_START && binaddr <= IRAM_END)
-                top.memory_p_u__fpga_2e_soc__u_2e_iram_2e_sram_2e_behav__mem_2e_mem[j].set<uint32_t>(word);
-            else if (binaddr >= DRAM_START && binaddr <= DRAM_END)
-                top.memory_p_u__fpga_2e_soc__u_2e_dram_2e_sram_2e_behav__mem_2e_mem[j].set<uint32_t>(word);
-            else
-                fprintf(stderr, "bin addr error!!!\n");
-        #else
-            if (binaddr >= IRAM_START && binaddr <= IRAM_END)
-                top.memory_p_u__fpga_2e_soc__u_2e_iram_2e_sram_2e_behav__mem_2e_mem[j].set<uint32_t>(word);
-            else if (binaddr >= DRAM_START && binaddr <= DRAM_END)
-                top.memory_p_u__fpga_2e_soc__u_2e_dram_2e_sram_2e_behav__mem_2e_mem[j].set<uint32_t>(word);
-            else
-                fprintf(stderr, "bin addr error!!!\n");
-        #endif
     }
 
 	int server_fd, sock_fd;

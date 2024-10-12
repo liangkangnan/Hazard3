@@ -291,7 +291,7 @@ sram_sync #(
 	.WIDTH(WIDTH),
 	.DEPTH(DEPTH),
 	.BYTE_ENABLE(1),
-	.PRELOAD_FILE("preload_file.mem")
+	.PRELOAD_FILE("")
 ) sram (
 	.clk   (clk),
 	.wen   (write_en),
