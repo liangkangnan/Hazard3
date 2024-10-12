@@ -6,7 +6,7 @@ ifndef APP
 $(error Must define application name as APP)
 endif
 
-LDSCRIPT     ?= ../common/flash_dram.ld
+LDSCRIPT     ?= ../common/iram_dram.ld
 CROSS_PREFIX ?= riscv32-unknown-elf-
 
 INCDIR       += ../common
@@ -40,7 +40,7 @@ all: bin
 bin: $(APP).bin
 
 clean:
-	rm -rf $(APP).bin $(APP).elf $(APP).dis $(APP).map
+	rm -rf $(APP).bin $(APP).elf $(APP).dis $(APP).map $(APP).flash
 
 ###############################################################################
 
@@ -49,6 +49,7 @@ $(APP).bin: $(APP).elf
 	$(CROSS_PREFIX)objdump -h $^ > $(APP).dis
 	$(CROSS_PREFIX)objdump -S $^ >> $(APP).dis
 	$(CROSS_PREFIX)size --format=berkeley $^
+	../../../tools/mkflashbin.py ../bootrom/bootrom.bin $(APP).bin $(APP).flash
 
 $(APP).elf: $(SRCS) $(wildcard %.h)
 	$(CROSS_PREFIX)gcc $(CCFLAGS) $(SRCS) -T $(LDSCRIPT) $(addprefix -I,$(INCDIR)) -o $@
