@@ -6,7 +6,7 @@ ifndef APP
 $(error Must define application name as APP)
 endif
 
-LDSCRIPT     ?= ../common/flash_ram.ld
+LDSCRIPT     ?= ../common/flash_dram.ld
 CROSS_PREFIX ?= riscv32-unknown-elf-
 
 INCDIR       += ../common
@@ -17,6 +17,7 @@ CCFLAGS      += -Wl,--wrap=printf -Wl,--wrap=vprintf -Wl,--wrap=puts -Wl,--wrap=
 
 SRCS += ../drivers/uart/src/uart_drv.c
 SRCS += ../drivers/mach_timer/src/mach_timer_drv.c
+SRCS += ../drivers/flash/src/flash_drv.c
 SRCS += ../common/crt0.S ../common/exception_table.S ../common/external_irq_table.S ../common/system.c ../common/exception_handler.c
 SRCS += ../common/syscalls.c
 SRCS += ../common/printf.c
@@ -25,7 +26,9 @@ SRCS += ../common/delay.c
 
 INCDIR += ../drivers/uart/inc
 INCDIR += ../drivers/mach_timer/inc
+INCDIR += ../drivers/flash/inc
 INCDIR += ../../../example_soc/libfpga/peris/uart
+INCDIR += ../../../example_soc/libfpga/peris/spi_03h_xip
 
 ###############################################################################
 
