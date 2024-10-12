@@ -9,9 +9,8 @@
 `default_nettype none
 
 module cmod_a7_2p_soc #(
-	parameter DTM_TYPE   = "JTAG",  // Can be "JTAG" or "ECP5"
-	parameter FLASH_DEPTH = 1 << 15, // Default 32 kwords -> 128 kB
-	parameter SRAM_DEPTH = 1 << 13, // Default 8 kwords -> 32 kB
+	parameter IRAM_DEPTH = 1 << 15, // Default 32 kwords -> 128 kB
+	parameter DRAM_DEPTH = 1 << 13, // Default 8 kwords -> 32 kB
 	parameter CLK_MHZ    = 12       // For timer timebase
 ) (
 	// System clock + reset
@@ -24,6 +23,16 @@ module cmod_a7_2p_soc #(
 	input  wire              tms,
 	input  wire              tdi,
 	output wire              tdo,
+
+`ifdef SIMULATION
+	output wire              dump_wave_en,
+`endif
+
+	// SPI interface
+	output wire              spi_cs_n,
+	output wire              spi_sck,
+	output wire              spi_mosi,
+	input  wire              spi_miso,
 
 	// IO
 	output wire              uart_tx,
@@ -306,11 +315,13 @@ assign d_hexokay = 1'b1;
 // ----------------------------------------------------------------------------
 // Bus fabric
 
-// - 128 kB Flash at... 0x0000_0000
-// - 32 kB SRAM at..... 0x2000_0000
-// - SIM ctrl at....... 0x8000_0000
+// - nor flash at...... 0x0000_0000
+// - 128 kB IRAM at.... 0x1000_0000
+// - 32 kB DRAM at..... 0x2000_0000
 // - System timer at... 0x4000_0000
 // - UART at........... 0x4000_4000
+// - XIP ctrl at....... 0x4000_8000
+// - SIM ctrl at....... 0x8000_0000
 
 // AHBL layer
 
@@ -327,18 +338,31 @@ wire               flash_hmastlock;
 wire [W_DATA-1:0]  flash_hwdata;
 wire [W_DATA-1:0]  flash_hrdata;
 
-wire               sram0_hready_resp;
-wire               sram0_hready;
-wire               sram0_hresp;
-wire [W_ADDR-1:0]  sram0_haddr;
-wire               sram0_hwrite;
-wire [1:0]         sram0_htrans;
-wire [2:0]         sram0_hsize;
-wire [2:0]         sram0_hburst;
-wire [3:0]         sram0_hprot;
-wire               sram0_hmastlock;
-wire [W_DATA-1:0]  sram0_hwdata;
-wire [W_DATA-1:0]  sram0_hrdata;
+wire               iram_hready_resp;
+wire               iram_hready;
+wire               iram_hresp;
+wire [W_ADDR-1:0]  iram_haddr;
+wire               iram_hwrite;
+wire [1:0]         iram_htrans;
+wire [2:0]         iram_hsize;
+wire [2:0]         iram_hburst;
+wire [3:0]         iram_hprot;
+wire               iram_hmastlock;
+wire [W_DATA-1:0]  iram_hwdata;
+wire [W_DATA-1:0]  iram_hrdata;
+
+wire               dram_hready_resp;
+wire               dram_hready;
+wire               dram_hresp;
+wire [W_ADDR-1:0]  dram_haddr;
+wire               dram_hwrite;
+wire [1:0]         dram_htrans;
+wire [2:0]         dram_hsize;
+wire [2:0]         dram_hburst;
+wire [3:0]         dram_hprot;
+wire               dram_hmastlock;
+wire [W_DATA-1:0]  dram_hwdata;
+wire [W_DATA-1:0]  dram_hrdata;
 
 wire               bridge_hready_resp;
 wire               bridge_hready;
@@ -370,11 +394,11 @@ wire [W_DATA-1:0]  sim_ctrl_hrdata;
 
 ahbl_crossbar #(
     .N_MASTERS  (2),
-    .N_SLAVES   (4),
+    .N_SLAVES   (5),
     .W_ADDR     (W_ADDR),
     .W_DATA     (W_DATA),
-    .ADDR_MAP   (128'h80000000_40000000_20000000_00000000),
-    .ADDR_MASK  (128'he0000000_e0000000_e0000000_e0000000)
+    .ADDR_MAP   (160'h80000000_40000000_20000000_10000000_00000000),
+    .ADDR_MASK  (160'hf0000000_f0000000_f0000000_f0000000_f0000000)
 ) crossbar (
 	.clk             (clk),
 	.rst_n           (rst_n),
@@ -391,29 +415,29 @@ ahbl_crossbar #(
     .src_hwdata      ({i_hwdata     , d_hwdata}),
     .src_hrdata      ({i_hrdata     , d_hrdata}),
 
-    .dst_hready_resp ({sim_ctrl_hready_resp , bridge_hready_resp , sram0_hready_resp , flash_hready_resp}),
-    .dst_hready      ({sim_ctrl_hready      , bridge_hready      , sram0_hready      , flash_hready}),
-    .dst_hresp       ({sim_ctrl_hresp       , bridge_hresp       , sram0_hresp       , flash_hresp}),
-    .dst_haddr       ({sim_ctrl_haddr       , bridge_haddr       , sram0_haddr       , flash_haddr}),
-    .dst_hwrite      ({sim_ctrl_hwrite      , bridge_hwrite      , sram0_hwrite      , flash_hwrite}),
-    .dst_htrans      ({sim_ctrl_htrans      , bridge_htrans      , sram0_htrans      , flash_htrans}),
-    .dst_hsize       ({sim_ctrl_hsize       , bridge_hsize       , sram0_hsize       , flash_hsize}),
-    .dst_hburst      ({sim_ctrl_hburst      , bridge_hburst      , sram0_hburst      , flash_hburst}),
-    .dst_hprot       ({sim_ctrl_hprot       , bridge_hprot       , sram0_hprot       , flash_hprot}),
-    .dst_hmastlock   ({sim_ctrl_hmastlock   , bridge_hmastlock   , sram0_hmastlock   , flash_hmastlock}),
-    .dst_hwdata      ({sim_ctrl_hwdata      , bridge_hwdata      , sram0_hwdata      , flash_hwdata}),
-    .dst_hrdata      ({sim_ctrl_hrdata      , bridge_hrdata      , sram0_hrdata      , flash_hrdata})
+    .dst_hready_resp ({sim_ctrl_hready_resp , bridge_hready_resp , dram_hready_resp , iram_hready_resp , flash_hready_resp}),
+    .dst_hready      ({sim_ctrl_hready      , bridge_hready      , dram_hready      , iram_hready      , flash_hready}),
+    .dst_hresp       ({sim_ctrl_hresp       , bridge_hresp       , dram_hresp       , iram_hresp       , flash_hresp}),
+    .dst_haddr       ({sim_ctrl_haddr       , bridge_haddr       , dram_haddr       , iram_haddr       , flash_haddr}),
+    .dst_hwrite      ({sim_ctrl_hwrite      , bridge_hwrite      , dram_hwrite      , iram_hwrite      , flash_hwrite}),
+    .dst_htrans      ({sim_ctrl_htrans      , bridge_htrans      , dram_htrans      , iram_htrans      , flash_htrans}),
+    .dst_hsize       ({sim_ctrl_hsize       , bridge_hsize       , dram_hsize       , iram_hsize       , flash_hsize}),
+    .dst_hburst      ({sim_ctrl_hburst      , bridge_hburst      , dram_hburst      , iram_hburst      , flash_hburst}),
+    .dst_hprot       ({sim_ctrl_hprot       , bridge_hprot       , dram_hprot       , iram_hprot       , flash_hprot}),
+    .dst_hmastlock   ({sim_ctrl_hmastlock   , bridge_hmastlock   , dram_hmastlock   , iram_hmastlock   , flash_hmastlock}),
+    .dst_hwdata      ({sim_ctrl_hwdata      , bridge_hwdata      , dram_hwdata      , iram_hwdata      , flash_hwdata}),
+    .dst_hrdata      ({sim_ctrl_hrdata      , bridge_hrdata      , dram_hrdata      , iram_hrdata      , flash_hrdata})
 );
 
 `else
 
 ahbl_crossbar #(
     .N_MASTERS  (2),
-    .N_SLAVES   (3),
+    .N_SLAVES   (4),
     .W_ADDR     (W_ADDR),
     .W_DATA     (W_DATA),
-    .ADDR_MAP   (96'h40000000_20000000_00000000),
-    .ADDR_MASK  (96'he0000000_e0000000_e0000000)
+    .ADDR_MAP   (128'h40000000_20000000_10000000_00000000),
+    .ADDR_MASK  (128'hf0000000_f0000000_f0000000_f0000000)
 ) crossbar (
 	.clk             (clk),
 	.rst_n           (rst_n),
@@ -430,18 +454,18 @@ ahbl_crossbar #(
     .src_hwdata      ({i_hwdata     , d_hwdata}),
     .src_hrdata      ({i_hrdata     , d_hrdata}),
 
-    .dst_hready_resp ({bridge_hready_resp , sram0_hready_resp , flash_hready_resp}),
-    .dst_hready      ({bridge_hready      , sram0_hready      , flash_hready}),
-    .dst_hresp       ({bridge_hresp       , sram0_hresp       , flash_hresp}),
-    .dst_haddr       ({bridge_haddr       , sram0_haddr       , flash_haddr}),
-    .dst_hwrite      ({bridge_hwrite      , sram0_hwrite      , flash_hwrite}),
-    .dst_htrans      ({bridge_htrans      , sram0_htrans      , flash_htrans}),
-    .dst_hsize       ({bridge_hsize       , sram0_hsize       , flash_hsize}),
-    .dst_hburst      ({bridge_hburst      , sram0_hburst      , flash_hburst}),
-    .dst_hprot       ({bridge_hprot       , sram0_hprot       , flash_hprot}),
-    .dst_hmastlock   ({bridge_hmastlock   , sram0_hmastlock   , flash_hmastlock}),
-    .dst_hwdata      ({bridge_hwdata      , sram0_hwdata      , flash_hwdata}),
-    .dst_hrdata      ({bridge_hrdata      , sram0_hrdata      , flash_hrdata})
+    .dst_hready_resp ({bridge_hready_resp , dram_hready_resp , iram_hready_resp , flash_hready_resp}),
+    .dst_hready      ({bridge_hready      , dram_hready      , iram_hready      , flash_hready}),
+    .dst_hresp       ({bridge_hresp       , dram_hresp       , iram_hresp       , flash_hresp}),
+    .dst_haddr       ({bridge_haddr       , dram_haddr       , iram_haddr       , flash_haddr}),
+    .dst_hwrite      ({bridge_hwrite      , dram_hwrite      , iram_hwrite      , flash_hwrite}),
+    .dst_htrans      ({bridge_htrans      , dram_htrans      , iram_htrans      , flash_htrans}),
+    .dst_hsize       ({bridge_hsize       , dram_hsize       , iram_hsize       , flash_hsize}),
+    .dst_hburst      ({bridge_hburst      , dram_hburst      , iram_hburst      , flash_hburst}),
+    .dst_hprot       ({bridge_hprot       , dram_hprot       , iram_hprot       , flash_hprot}),
+    .dst_hmastlock   ({bridge_hmastlock   , dram_hmastlock   , iram_hmastlock   , flash_hmastlock}),
+    .dst_hwdata      ({bridge_hwdata      , dram_hwdata      , iram_hwdata      , flash_hwdata}),
+    .dst_hrdata      ({bridge_hrdata      , dram_hrdata      , iram_hrdata      , flash_hrdata})
 );
 
 `endif
@@ -475,6 +499,15 @@ wire [31:0] timer_prdata;
 wire        timer_pready;
 wire        timer_pslverr;
 
+wire        xip_psel;
+wire        xip_penable;
+wire        xip_pwrite;
+wire [15:0] xip_paddr;
+wire [31:0] xip_pwdata;
+wire [31:0] xip_prdata;
+wire        xip_pready;
+wire        xip_pslverr;
+
 ahbl_to_apb apb_bridge_u (
 	.clk               (clk),
 	.rst_n             (rst_n),
@@ -503,9 +536,9 @@ ahbl_to_apb apb_bridge_u (
 );
 
 apb_splitter #(
-	.N_SLAVES   (2),
-	.ADDR_MAP   (32'h4000_0000),
-	.ADDR_MASK  (32'hc000_c000)
+	.N_SLAVES   (3),
+	.ADDR_MAP   (48'h8000_4000_0000),
+	.ADDR_MASK  (48'hf000_f000_f000)
 ) inst_apb_splitter (
 	.apbs_paddr   (bridge_paddr),
 	.apbs_psel    (bridge_psel),
@@ -516,14 +549,14 @@ apb_splitter #(
 	.apbs_prdata  (bridge_prdata),
 	.apbs_pslverr (bridge_pslverr),
 
-	.apbm_paddr   ({uart_paddr   , timer_paddr  }),
-	.apbm_psel    ({uart_psel    , timer_psel   }),
-	.apbm_penable ({uart_penable , timer_penable}),
-	.apbm_pwrite  ({uart_pwrite  , timer_pwrite }),
-	.apbm_pwdata  ({uart_pwdata  , timer_pwdata }),
-	.apbm_pready  ({uart_pready  , timer_pready }),
-	.apbm_prdata  ({uart_prdata  , timer_prdata }),
-	.apbm_pslverr ({uart_pslverr , timer_pslverr})
+	.apbm_paddr   ({xip_paddr   , uart_paddr   , timer_paddr  }),
+	.apbm_psel    ({xip_psel    , uart_psel    , timer_psel   }),
+	.apbm_penable ({xip_penable , uart_penable , timer_penable}),
+	.apbm_pwrite  ({xip_pwrite  , uart_pwrite  , timer_pwrite }),
+	.apbm_pwdata  ({xip_pwdata  , uart_pwdata  , timer_pwdata }),
+	.apbm_pready  ({xip_pready  , uart_pready  , timer_pready }),
+	.apbm_prdata  ({xip_prdata  , uart_prdata  , timer_prdata }),
+	.apbm_pslverr ({xip_pslverr , uart_pslverr , timer_pslverr})
 );
 
 // ----------------------------------------------------------------------------
@@ -533,12 +566,18 @@ apb_splitter #(
 // actually enter an infinite crash loop after reset if memory is
 // zero-initialised so don't leave the little guy hanging too long)
 
-// use sram as flash storage
-ahb_sync_sram #(
-	.DEPTH (FLASH_DEPTH)
-) flash (
+spi_03h_xip xip_u (
 	.clk               (clk),
 	.rst_n             (rst_n),
+
+	.apbs_psel         (xip_psel),
+	.apbs_penable      (xip_penable),
+	.apbs_pwrite       (xip_pwrite),
+	.apbs_paddr        (xip_paddr),
+	.apbs_pwdata       (xip_pwdata),
+	.apbs_prdata       (xip_prdata),
+	.apbs_pready       (xip_pready),
+	.apbs_pslverr      (xip_pslverr),
 
 	.ahbls_hready_resp (flash_hready_resp),
 	.ahbls_hready      (flash_hready),
@@ -551,33 +590,60 @@ ahb_sync_sram #(
 	.ahbls_hprot       (flash_hprot),
 	.ahbls_hmastlock   (flash_hmastlock),
 	.ahbls_hwdata      (flash_hwdata),
-	.ahbls_hrdata      (flash_hrdata)
+	.ahbls_hrdata      (flash_hrdata),
+
+	.spi_cs_n          (spi_cs_n),
+	.spi_sck           (spi_sck),
+	.spi_mosi          (spi_mosi),
+	.spi_miso          (spi_miso)
 );
 
 ahb_sync_sram #(
-	.DEPTH (SRAM_DEPTH)
-) sram0 (
+	.DEPTH (IRAM_DEPTH)
+) iram (
 	.clk               (clk),
 	.rst_n             (rst_n),
 
-	.ahbls_hready_resp (sram0_hready_resp),
-	.ahbls_hready      (sram0_hready),
-	.ahbls_hresp       (sram0_hresp),
-	.ahbls_haddr       (sram0_haddr),
-	.ahbls_hwrite      (sram0_hwrite),
-	.ahbls_htrans      (sram0_htrans),
-	.ahbls_hsize       (sram0_hsize),
-	.ahbls_hburst      (sram0_hburst),
-	.ahbls_hprot       (sram0_hprot),
-	.ahbls_hmastlock   (sram0_hmastlock),
-	.ahbls_hwdata      (sram0_hwdata),
-	.ahbls_hrdata      (sram0_hrdata)
+	.ahbls_hready_resp (iram_hready_resp),
+	.ahbls_hready      (iram_hready),
+	.ahbls_hresp       (iram_hresp),
+	.ahbls_haddr       (iram_haddr),
+	.ahbls_hwrite      (iram_hwrite),
+	.ahbls_htrans      (iram_htrans),
+	.ahbls_hsize       (iram_hsize),
+	.ahbls_hburst      (iram_hburst),
+	.ahbls_hprot       (iram_hprot),
+	.ahbls_hmastlock   (iram_hmastlock),
+	.ahbls_hwdata      (iram_hwdata),
+	.ahbls_hrdata      (iram_hrdata)
+);
+
+ahb_sync_sram #(
+	.DEPTH (DRAM_DEPTH)
+) dram (
+	.clk               (clk),
+	.rst_n             (rst_n),
+
+	.ahbls_hready_resp (dram_hready_resp),
+	.ahbls_hready      (dram_hready),
+	.ahbls_hresp       (dram_hresp),
+	.ahbls_haddr       (dram_haddr),
+	.ahbls_hwrite      (dram_hwrite),
+	.ahbls_htrans      (dram_htrans),
+	.ahbls_hsize       (dram_hsize),
+	.ahbls_hburst      (dram_hburst),
+	.ahbls_hprot       (dram_hprot),
+	.ahbls_hmastlock   (dram_hmastlock),
+	.ahbls_hwdata      (dram_hwdata),
+	.ahbls_hrdata      (dram_hrdata)
 );
 
 `ifdef SIMULATION
 sim_ctrl sim_ctrl_u (
 	.clk               (clk),
 	.rst_n             (rst_n),
+
+	.dump_wave_en      (dump_wave_en),
 
 	.ahbls_hready_resp (sim_ctrl_hready_resp),
 	.ahbls_hready      (sim_ctrl_hready),

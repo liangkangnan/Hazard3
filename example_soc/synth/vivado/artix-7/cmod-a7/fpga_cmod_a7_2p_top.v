@@ -10,6 +10,15 @@ module fpga_cmod_a7_2p_top (
 
 	output wire       led,
 
+`ifdef SIMULATION
+	output wire       dump_wave_en,
+`endif
+
+	output wire       spi_cs_n,
+	output wire       spi_sck,
+	output wire       spi_mosi,
+	input  wire       spi_miso,
+
 	output wire       uart_tx,
 	input  wire       uart_rx
 );
@@ -56,10 +65,9 @@ module fpga_cmod_a7_2p_top (
     );
 
     cmod_a7_2p_soc #(
-        .DTM_TYPE       ("JTAG"),
         .CLK_MHZ        (12),
-        .FLASH_DEPTH    (1 << 15),
-        .SRAM_DEPTH     (1 << 13)
+        .IRAM_DEPTH     (1 << 15),
+        .DRAM_DEPTH     (1 << 13)
     ) soc_u (
         .clk            (clk_sys),
         .rst_n          (rst_n_sys),
@@ -69,6 +77,15 @@ module fpga_cmod_a7_2p_top (
         .tms            (tms),
         .tdi            (tdi),
         .tdo            (tdo),
+
+`ifdef SIMULATION
+        .dump_wave_en   (dump_wave_en),
+`endif
+
+        .spi_cs_n       (spi_cs_n),
+        .spi_sck        (spi_sck),
+        .spi_mosi       (spi_mosi),
+        .spi_miso       (spi_miso),
 
         .uart_tx        (uart_tx),
         .uart_rx        (uart_rx)
