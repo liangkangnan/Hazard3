@@ -35,7 +35,7 @@ INCDIR += ../../../example_soc/libfpga/peris/spi_03h_xip
 .SUFFIXES:
 .PHONY: all clean
 
-all: bin
+all: ../bootrom/bootrom.bin bin
 
 bin: $(APP).bin
 
@@ -53,3 +53,6 @@ $(APP).bin: $(APP).elf
 
 $(APP).elf: $(SRCS) $(wildcard %.h)
 	$(CROSS_PREFIX)gcc $(CCFLAGS) $(SRCS) -T $(LDSCRIPT) $(addprefix -I,$(INCDIR)) -o $@
+
+../bootrom/bootrom.bin:
+	make -C ../bootrom/
