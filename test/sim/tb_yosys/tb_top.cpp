@@ -59,6 +59,8 @@ const char *help_str =
 "                       Default is 0 (no maximum).\n"
 "    --port n         : Port number to listen for openocd remote bitbang. Sim\n"
 "                       runs in lockstep with JTAG bitbang, not free-running.\n"
+"    --resetoffset addr : Reset offset address when core reset.\n"
+"                         Default is 0x40.\n"
 "    --dumpall        : Dump wave all the time.\n"
 "    --retcode        : Testbench's return code is the return code written to\n"
 "                       IO_EXIT by the CPU, or -1 if timed out.\n"
@@ -82,6 +84,7 @@ int main(int argc, char **argv, char **env)
     uint16_t port = 0;
     bool propagate_return_code = false;
     uint32_t i, j;
+    uint32_t reset_offset = 0x40;
 
     // 参数解析
     for (int i = 1; i < argc; ++i) {
@@ -116,6 +119,11 @@ int main(int argc, char **argv, char **env)
             if (argc - i < 2)
                 exit_help("Option --port requires an argument\n");
             port = std::stol(argv[i + 1], 0, 0);
+            i += 1;
+        } else if (s == "--resetoffset") {
+            if (argc - i < 2)
+                exit_help("Option --resetoffset requires an argument\n");
+            reset_offset = std::stol(argv[i + 1], 0, 0);
             i += 1;
 		} else if (s == "--retcode") {
             propagate_return_code = true;
@@ -260,14 +268,19 @@ int main(int argc, char **argv, char **env)
 		sock_fd = wait_for_connection(server_fd, port, (struct sockaddr *)&sock_addr, &sock_addr_len);
 	}
 
+    top.p_reset__offset.set<uint32_t>(reset_offset);
+
 	top.step();
     top.p_rst__n.set<bool>(false);
+	top.p_clk.set<bool>(false);
+	top.p_tck.set<bool>(false);
+	top.step();
 	top.p_clk.set<bool>(true);
 	top.p_tck.set<bool>(true);
 	top.step();
+    top.p_rst__n.set<bool>(true);
 	top.p_clk.set<bool>(false);
 	top.p_tck.set<bool>(false);
-    top.p_rst__n.set<bool>(true);
 	top.step();
 	top.step(); // workaround for github.com/YosysHQ/yosys/issues/2780
 

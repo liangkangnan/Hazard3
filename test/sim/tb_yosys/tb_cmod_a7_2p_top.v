@@ -10,6 +10,7 @@ module tb_top (
 	output wire       tdo,
 
 	output wire       dump_wave_en,
+	input  wire [31:0]reset_offset,
 
 	output wire       led
 );
@@ -28,6 +29,7 @@ module tb_top (
         .tdo(tdo),
         .led(led),
         .dump_wave_en(dump_wave_en),
+        .reset_offset(reset_offset),
         .spi_cs_n(cs),
         .spi_sck(sck),
         .spi_mosi(mosi),
