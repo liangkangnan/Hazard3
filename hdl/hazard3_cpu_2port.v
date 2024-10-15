@@ -28,6 +28,8 @@ module hazard3_cpu_2port #(
 	`RVFI_OUTPUTS ,
 	`endif
 
+	input  wire [W_ADDR-1:0]  reset_offset,
+
 	// Instruction fetch port
 	output wire [W_ADDR-1:0]  i_haddr,
 	output wire               i_hwrite,
@@ -136,6 +138,8 @@ hazard3_core #(
 	`ifdef RISCV_FORMAL
 	`RVFI_CONN ,
 	`endif
+
+	.reset_offset               (reset_offset),
 
 	.bus_aph_req_i              (core_aph_req_i),
 	.bus_aph_panic_i            (/* unused for 2port */),

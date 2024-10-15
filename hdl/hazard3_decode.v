@@ -13,6 +13,8 @@ module hazard3_decode #(
 	input  wire                 clk,
 	input  wire                 rst_n,
 
+	input  wire [W_ADDR-1:0]    reset_offset,
+
 	input  wire [31:0]          fd_cir,
 	input  wire [1:0]           fd_cir_err,
 	input  wire [1:0]           fd_cir_predbranch,
@@ -207,7 +209,7 @@ wire update_pc_on_cir_unlock = cir_lock_prev && deassert_cir_lock && !(uop_seq &
 
 always @ (posedge clk or negedge rst_n) begin
 	if (!rst_n) begin
-		pc <= RESET_VECTOR;
+		pc <= reset_offset;
 	end else begin
 		if (debug_dpc_wen) begin
 			pc <= debug_dpc_wdata;

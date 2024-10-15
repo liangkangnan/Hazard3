@@ -11,6 +11,8 @@ module hazard3_frontend #(
 	input  wire              clk,
 	input  wire              rst_n,
 
+	input  wire [W_ADDR-1:0] reset_offset,
+
 	// Fetch interface
 	// addr_vld may be asserted at any time, but after assertion,
 	// neither addr nor addr_vld may change until the cycle after addr_rdy.
@@ -274,7 +276,7 @@ wire [W_ADDR-1:0] jump_target_post_increment =
 
 always @ (posedge clk or negedge rst_n) begin
 	if (!rst_n) begin
-		fetch_addr <= RESET_VECTOR;
+		fetch_addr <= reset_offset;
 		// M-mode at reset:
 		fetch_priv <= 1'b1;
 		btb_prev_start_of_overhanging <= 1'b0;

@@ -26,6 +26,8 @@ module hazard3_core #(
 	`RVFI_OUTPUTS ,
 	`endif
 
+	input  wire [W_ADDR-1:0]   reset_offset,
+
 	// Instruction fetch port
 	output wire                bus_aph_req_i,
 	output wire                bus_aph_panic_i, // e.g. branch mispredict + flush
@@ -133,6 +135,8 @@ hazard3_frontend #(
 	.clk                  (clk),
 	.rst_n                (rst_n),
 
+	.reset_offset         (reset_offset),
+
 	.mem_size             (f_mem_size),
 	.mem_addr             (bus_haddr_i),
 	.mem_priv             (bus_priv_i),
@@ -238,6 +242,8 @@ hazard3_decode #(
 ) decode_u (
 	.clk                  (clk),
 	.rst_n                (rst_n),
+
+	.reset_offset         (reset_offset),
 
 	.fd_cir               (fd_cir),
 	.fd_cir_err           (fd_cir_err),

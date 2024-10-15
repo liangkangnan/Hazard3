@@ -21,6 +21,8 @@ module hazard3_cpu_1port #(
 	`RVFI_OUTPUTS ,
 	`endif
 
+	input  wire [W_ADDR-1:0]  reset_offset,
+
 	// Power control signals
 	output wire               pwrup_req,
 	input  wire               pwrup_ack,
@@ -125,6 +127,8 @@ hazard3_core #(
 	`ifdef RISCV_FORMAL
 	`RVFI_CONN ,
 	`endif
+
+	.reset_offset               (reset_offset),
 
 	.bus_aph_req_i              (core_aph_req_i),
 	.bus_aph_panic_i            (core_aph_panic_i),
