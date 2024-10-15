@@ -28,6 +28,8 @@ module cmod_a7_2p_soc #(
 	output wire              dump_wave_en,
 `endif
 
+	input  wire [31:0]       reset_offset,
+
 	// SPI interface
 	output wire              spi_cs_n,
 	output wire              spi_sck,
@@ -249,6 +251,8 @@ hazard3_cpu_2port #(
 	.clk_en                     (/* unused */),
 	.unblock_out                (unblock_out),
 	.unblock_in                 (unblock_out), // Tied back
+
+	.reset_offset               (reset_offset),
 
 	.i_haddr                    (i_haddr),
 	.i_hwrite                   (i_hwrite),
