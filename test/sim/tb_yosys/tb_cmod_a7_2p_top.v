@@ -23,6 +23,7 @@ module tb_top (
     // 实际顶层模块
     fpga_cmod_a7_2p_top u_fpga (
         .clk_12m(clk),
+        .rst_n(rst_n),
         .tck(tck),
         .tms(tms),
         .tdi(tdi),
