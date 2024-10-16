@@ -285,7 +285,7 @@ sync_fifo #(
 );
 
 assign sram_wdata = prog_byte;
-assign sram_addr  = read_en_d ? addr_d[ADDR_WIDTH-1:0] : prog_addr;
+assign sram_addr  = write_en ? prog_addr : addr_d[ADDR_WIDTH-1:0];
 
 sram_sync #(
 	.WIDTH(WIDTH),
