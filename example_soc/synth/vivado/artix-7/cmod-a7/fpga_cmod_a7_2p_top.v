@@ -2,6 +2,7 @@
 
 module fpga_cmod_a7_2p_top (
 	input wire        clk_12m,
+	input wire        rst_n,
 
 	input  wire       tck,
 	input  wire       tms,
@@ -45,7 +46,7 @@ module fpga_cmod_a7_2p_top (
         .SHIFT (5)
     ) rstgen (
         .clk         (clk_sys),
-        .force_rst_n (1'b1),
+        .force_rst_n (rst_n),
         .rst_n       (rst_n_sys)
     );
 
