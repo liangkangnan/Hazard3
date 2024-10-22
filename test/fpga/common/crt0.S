@@ -126,6 +126,8 @@ platform_entry: // symbol for stack traces
     // linker can use longer sequences if these are out of `jal` range. Will
     // still get relaxed to a `jal` if possible.
     // call runtime_init_per_core_h3_irq_registers (now called in runtime_init)
+    la ra, qspi_init
+    jalr ra, ra
     call runtime_init
     call main
     ebreak
@@ -173,4 +175,92 @@ runtime_init_per_core_h3_irq_registers:
     // Take this chance to clear mscratch, which is used to detect nested
     // exceptions in isr_riscv_machine_exception:
     csrw mscratch, zero
+    ret
+
+// ----------------------------------------------------------------------------
+// Enable QSPI Mode
+
+#define FLASH_CSR  (0x40008000)
+#define FLASH_TX   (0x40008004)
+#define FLASH_RX   (0x40008008)
+#define FLASH_QSPI (0x4000800C)
+
+.section .qspi.init.inram
+
+__flash_ctrl_busy:
+    li a0, FLASH_CSR
+    lw a1, (a0)
+    andi a1, a1, 0x2
+    bgtz a1, __flash_ctrl_busy
+    ret
+
+qspi_init:
+    mv t0, ra
+    jal write_enable
+    jal enable_flash_qspi
+    jal enable_xip_qspi
+    mv ra, t0
+    ret
+
+write_enable:
+    mv t1, ra
+
+    // enable direct mode
+    li a0, FLASH_CSR
+    li a1, 0x1
+    sw a1, (a0)
+
+    // write enable
+    li a0, FLASH_TX
+    li a1, 0x06
+    sw a1, (a0)
+    jal __flash_ctrl_busy
+
+    // disable direct mode
+    li a0, FLASH_CSR
+    li a1, 0x0
+    sw a1, (a0)
+
+    mv ra, t1
+    ret
+
+enable_flash_qspi:
+    mv t1, ra
+
+    // enable direct mode
+    li a0, FLASH_CSR
+    li a1, 0x1
+    sw a1, (a0)
+
+    // write cmd 0x01
+    li a0, FLASH_TX
+    li a1, 0x01
+    sw a1, (a0)
+    jal __flash_ctrl_busy
+
+    // write data 0x00
+    li a0, FLASH_TX
+    li a1, 0x00
+    sw a1, (a0)
+    jal __flash_ctrl_busy
+
+    // write data 0x02
+    li a0, FLASH_TX
+    li a1, 0x02
+    sw a1, (a0)
+    jal __flash_ctrl_busy
+
+    // disable direct mode
+    li a0, FLASH_CSR
+    li a1, 0x0
+    sw a1, (a0)
+
+    mv ra, t1
+    ret
+
+enable_xip_qspi:
+    li a0, FLASH_QSPI
+    // 4 dummy, enable qspi mode
+    li a1, 0x9
+    sw a1, (a0)
     ret

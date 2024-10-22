@@ -152,6 +152,8 @@ SECTIONS
     	*(.srodata.cst2)
     	*(.srodata .srodata.*)
     	. = ALIGN(4);
+    	*(.qspi.init.inram)
+    	. = ALIGN(4);
 		PROVIDE( _edata = .);
 	} >RAM AT>FLASH
 
