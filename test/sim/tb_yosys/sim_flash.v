@@ -26,15 +26,17 @@ module sim_flash #(
 
 	input  wire        spi_cs_n,
 	input  wire        spi_sck,
-	input  wire        spi_mosi,
-	output wire        spi_miso
+	input  wire [3:0]  spi_din,
+	output wire [3:0]  spi_dout
 );
 
 localparam ADDR_WIDTH = $clog2(DEPTH);
 
 // support cmd
 localparam CMD_READ_STATUS     = 8'h05;
+localparam CMD_WRITE_STATUS    = 8'h01;
 localparam CMD_READ_BYTE       = 8'h03;
+localparam CMD_QUAL_READ       = 8'hEB;
 localparam CMD_PAGE_PROG       = 8'h02;
 localparam CMD_SECTOR_ERASE    = 8'h20;
 localparam CMD_32K_ERASE       = 8'h52;
@@ -53,6 +55,9 @@ localparam S_PROG_DATA         = 4'd5;
 localparam S_WRITE_ENABLE      = 4'd6;
 localparam S_WRITE_DISABLE     = 4'd7;
 localparam S_ERASE             = 4'd8;
+localparam S_WRITE_STATUS      = 4'd9;
+localparam S_DUMMY             = 4'd10;
+localparam S_QUAL_READ         = 4'd11;
 localparam S_UNKNOWN           = 4'd15;
 
 reg [ 3:0] state_d                , state_q;
@@ -60,13 +65,14 @@ reg [31:0] shift_reg_d            , shift_reg_q;
 reg [ 7:0] counter_d              , counter_q;
 reg [ 7:0] cmd_d                  , cmd_q;
 reg [23:0] addr_d                 , addr_q;
-reg        spi_miso_d             , spi_miso_q;
+reg [ 3:0] spi_miso_d             , spi_miso_q;
 reg        read_en_d              , read_en_q;
-reg [ 7:0] status_reg_d           , status_reg_q;
+reg [15:0] status_reg_d           , status_reg_q;
 reg        reset_fifo_d           , reset_fifo_q;
 reg        write_fifo_en_d        , write_fifo_en_q;
 reg [ 7:0] write_fifo_data_d      , write_fifo_data_q;
 reg        flash_write_enable_d   , flash_write_enable_q;
+reg        flash_qe_enable_d      , flash_qe_enable_q;
 
 reg                  spi_sck_q;
 reg                  programming;
@@ -94,11 +100,12 @@ always @ (*) begin
 	addr_d                 = addr_q;
 	spi_miso_d             = spi_miso_q;
 	read_en_d              = 1'b0;
-	status_reg_d           = {7'h0, programming};
+	status_reg_d           = {6'h0, flash_qe_enable_q, 8'h0, programming};
 	reset_fifo_d           = 1'b0;
 	write_fifo_en_d        = 1'b0;
 	write_fifo_data_d      = write_fifo_data_q;
 	flash_write_enable_d   = flash_write_enable_q;
+	flash_qe_enable_d      = flash_qe_enable_q;
 
 	if (spi_cs_n) begin
 		state_d = S_IDLE;
@@ -115,13 +122,16 @@ always @ (*) begin
 		S_CMD: begin
 			if (sck_pos) begin
 				counter_d = counter_q + 1'b1;
-				shift_reg_d = {shift_reg_q[30:0], spi_mosi};
+				shift_reg_d = {shift_reg_q[30:0], spi_din[0]};
 				if (counter_q == 7) begin
 					counter_d = 8'h0;
 					cmd_d = shift_reg_d[7:0];
 					if (cmd_d == CMD_READ_STATUS) begin
 						state_d = S_READ_STATUS;
+					end else if (cmd_d == CMD_WRITE_STATUS) begin
+						state_d = S_WRITE_STATUS;
 					end else if (cmd_d == CMD_READ_BYTE ||
+								 cmd_d == CMD_QUAL_READ ||
 								 cmd_d == CMD_PAGE_PROG) begin
 						state_d = S_ADDR;
 					end else if (cmd_d == CMD_SECTOR_ERASE ||
@@ -147,16 +157,25 @@ always @ (*) begin
 		S_ADDR: begin
 			if (sck_pos) begin
 				counter_d = counter_q + 1'b1;
-				shift_reg_d = {shift_reg_q[30:0], spi_mosi};
-				if (counter_q == 23) begin
-					counter_d = 8'h0;
-					addr_d = {shift_reg_q[22:0], spi_mosi};
-					if (cmd_q == 8'h03) begin
-						state_d = S_READ_DATA;
-						read_en_d = 1'b1;
-					end else if (cmd_q == 8'h02) begin
-						state_d = S_PROG_DATA;
-						reset_fifo_d = 1'b1;
+				if (flash_qe_enable_q && (cmd_q == CMD_QUAL_READ)) begin
+					shift_reg_d = {shift_reg_q[27:0], spi_din};
+					if (counter_q == 7) begin
+						counter_d = 8'h0;
+						addr_d = shift_reg_q[27:4];
+						state_d = S_DUMMY;
+					end
+				end else begin
+					shift_reg_d = {shift_reg_q[30:0], spi_din[0]};
+					if (counter_q == 23) begin
+						counter_d = 8'h0;
+						addr_d = {shift_reg_q[22:0], spi_din[0]};
+						if (cmd_q == 8'h03) begin
+							state_d = S_READ_DATA;
+							read_en_d = 1'b1;
+						end else if (cmd_q == 8'h02) begin
+							state_d = S_PROG_DATA;
+							reset_fifo_d = 1'b1;
+						end
 					end
 				end
 			end
@@ -165,7 +184,7 @@ always @ (*) begin
 		S_READ_DATA: begin
 			if (sck_neg) begin
 				counter_d = counter_q + 1'b1;
-				spi_miso_d = sram_rdata[7 - counter_q];
+				spi_miso_d[1] = sram_rdata[7 - counter_q];
 				if (counter_q == 7) begin
 					counter_d = 8'h0;
 					read_en_d = 1'b1;
@@ -177,9 +196,18 @@ always @ (*) begin
 		S_READ_STATUS: begin
 			if (sck_neg) begin
 				counter_d = counter_q + 1'b1;
-				spi_miso_d = status_reg_q[7 - counter_q];
-				if (counter_q == 7) begin
+				spi_miso_d[1] = status_reg_q[15 - counter_q];
+				if (counter_q == 15) begin
 					counter_d = 8'h0;
+				end
+			end
+		end
+
+		S_WRITE_STATUS: begin
+			if (sck_pos) begin
+				counter_d = counter_q + 1'b1;
+				if (counter_q == 14) begin
+					flash_qe_enable_d = spi_din[0];
 				end
 			end
 		end
@@ -187,10 +215,36 @@ always @ (*) begin
 		S_PROG_DATA: begin
 			if (sck_pos) begin
 				counter_d = counter_q + 1'b1;
-				write_fifo_data_d = {write_fifo_data_q[6:0], spi_mosi};
+				write_fifo_data_d = {write_fifo_data_q[6:0], spi_din[0]};
 				if (counter_q == 7) begin
 					counter_d = 8'h0;
 					write_fifo_en_d = 1'b1;
+				end
+			end
+		end
+
+		S_DUMMY: begin
+			if (sck_pos) begin
+				counter_d = counter_q + 1'b1;
+				if (counter_q == 3) begin
+					counter_d = 8'h0;
+					state_d = S_QUAL_READ;
+					read_en_d = 1'b1;
+					addr_d = addr_q;
+				end
+			end
+		end
+
+		S_QUAL_READ: begin
+			if (sck_neg) begin
+				counter_d = counter_q + 1'b1;
+				if (counter_q == 0) begin
+					spi_miso_d = sram_rdata[7:4];
+				end else begin
+					spi_miso_d = sram_rdata[3:0];
+					counter_d = 8'h0;
+					read_en_d = 1'b1;
+					addr_d = addr_q + 24'h1;
 				end
 			end
 		end
@@ -206,7 +260,7 @@ always @ (*) begin
 	endcase
 end
 
-assign spi_miso = spi_miso_d;
+assign spi_dout = spi_miso_d;
 
 always @ (posedge clk or negedge rst_n) begin
 	if (!rst_n) begin
@@ -216,13 +270,14 @@ always @ (posedge clk or negedge rst_n) begin
 		shift_reg_q            <= 32'h0;
 		cmd_q                  <= 8'h0;
 		addr_q                 <= 24'h0;
-		spi_miso_q             <= 1'b0;
+		spi_miso_q             <= 4'b0;
 		read_en_q              <= 1'b0;
-		status_reg_q           <= 8'h0;
+		status_reg_q           <= 16'h0;
 		reset_fifo_q           <= 1'b0;
 		write_fifo_en_q        <= 1'b0;
 		write_fifo_data_q      <= 8'h0;
 		flash_write_enable_q   <= 1'b0;
+		flash_qe_enable_q      <= 1'b0;
 	end else begin
 		state_q                <= state_d;
 		spi_sck_q              <= spi_sck;
@@ -237,6 +292,7 @@ always @ (posedge clk or negedge rst_n) begin
 		write_fifo_en_q        <= write_fifo_en_d;
 		write_fifo_data_q      <= write_fifo_data_d;
 		flash_write_enable_q   <= flash_write_enable_d;
+		flash_qe_enable_q      <= flash_qe_enable_d;
 	end
 end
 

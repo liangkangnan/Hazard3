@@ -15,10 +15,10 @@ module tb_top (
 	output wire       led
 );
 
-    wire cs;
-    wire sck;
-    wire mosi;
-    wire miso;
+    wire xip_cs;
+    wire xip_sck;
+    wire [3:0] spi_din;
+    wire [3:0] xip_dout;
 
     // 实际顶层模块
     fpga_cmod_a7_2p_top u_fpga (
@@ -31,10 +31,11 @@ module tb_top (
         .led(led),
         .dump_wave_en(dump_wave_en),
         .reset_offset(reset_offset),
-        .spi_cs_n(cs),
-        .spi_sck(sck),
-        .spi_mosi(mosi),
-        .spi_miso(miso)
+        .xip_cs_n(xip_cs),
+        .xip_sck(xip_sck),
+        .xip_dout(spi_din),
+        .xip_douten(/* unused */),
+        .xip_din(xip_dout)
     );
 
     sim_flash #(
@@ -43,10 +44,10 @@ module tb_top (
     ) flash (
         .clk(clk),
         .rst_n(rst_n),
-        .spi_cs_n(cs),
-        .spi_sck(sck),
-        .spi_mosi(mosi),
-        .spi_miso(miso)
+        .spi_cs_n(xip_cs),
+        .spi_sck(xip_sck),
+        .spi_din(spi_din),
+        .spi_dout(xip_dout)
     );
 
 endmodule
