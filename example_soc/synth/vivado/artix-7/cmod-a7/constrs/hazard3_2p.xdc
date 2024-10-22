@@ -18,12 +18,14 @@ set_property -dict { PACKAGE_PIN J17   IOSTANDARD LVCMOS33 } [get_ports uart_rx]
 
 set_property -dict { PACKAGE_PIN A18  IOSTANDARD LVCMOS33 } [get_ports rst_n]; #IO_L19N_T3_VREF_16 Sch=btn[0]
 
-## SPI引脚
+## XIP引脚
 
-set_property -dict { PACKAGE_PIN A15  IOSTANDARD LVCMOS33 } [get_ports spi_cs_n]; #IO_L6N_T0_VREF_16 Sch=pio[07]
-set_property -dict { PACKAGE_PIN J1   IOSTANDARD LVCMOS33 } [get_ports spi_sck];  #IO_L3N_T0_DQS_AD5N_35 Sch=pio[11]
-set_property -dict { PACKAGE_PIN K2   IOSTANDARD LVCMOS33 } [get_ports spi_mosi]; #IO_L5P_T0_AD13P_35 Sch=pio[12]
-set_property -dict { PACKAGE_PIN B15  IOSTANDARD LVCMOS33 } [get_ports spi_miso]; #IO_L11N_T1_SRCC_16 Sch=pio[08]
+set_property -dict { PACKAGE_PIN A15  IOSTANDARD LVCMOS33 } [get_ports xip_cs_n]; #IO_L6N_T0_VREF_16 Sch=pio[07]
+set_property -dict { PACKAGE_PIN J1   IOSTANDARD LVCMOS33 } [get_ports xip_sck];  #IO_L3N_T0_DQS_AD5N_35 Sch=pio[11]
+set_property -dict { PACKAGE_PIN K2   IOSTANDARD LVCMOS33 } [get_ports { xip_io[0] }]; #IO_L5P_T0_AD13P_35 Sch=pio[12]
+set_property -dict { PACKAGE_PIN B15  IOSTANDARD LVCMOS33 } [get_ports { xip_io[1] }]; #IO_L11N_T1_SRCC_16 Sch=pio[08]
+set_property -dict { PACKAGE_PIN A14  IOSTANDARD LVCMOS33 } [get_ports { xip_io[2] }]; #IO_L6P_T0_16 Sch=pio[09]
+set_property -dict { PACKAGE_PIN J3   IOSTANDARD LVCMOS33 } [get_ports { xip_io[3] }]; #IO_L7P_T1_AD6P_35 Sch=pio[10]
 
 ## JTAG引脚
 

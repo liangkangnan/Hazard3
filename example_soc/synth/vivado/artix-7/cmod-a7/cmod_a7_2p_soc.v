@@ -30,11 +30,12 @@ module cmod_a7_2p_soc #(
 
 	input  wire [31:0]       reset_offset,
 
-	// SPI interface
-	output wire              spi_cs_n,
-	output wire              spi_sck,
-	output wire              spi_mosi,
-	input  wire              spi_miso,
+	// XIP interface
+	output wire              xip_cs_n,
+	output wire              xip_sck,
+	output wire [3:0]        xip_dout,
+	output wire [3:0]        xip_douten,
+	input  wire [3:0]        xip_din,
 
 	// IO
 	output wire              uart_tx,
@@ -570,7 +571,7 @@ apb_splitter #(
 // actually enter an infinite crash loop after reset if memory is
 // zero-initialised so don't leave the little guy hanging too long)
 
-spi_03h_xip xip_u (
+spi_qspi_xip xip_u (
 	.clk               (clk),
 	.rst_n             (rst_n),
 
@@ -596,10 +597,11 @@ spi_03h_xip xip_u (
 	.ahbls_hwdata      (flash_hwdata),
 	.ahbls_hrdata      (flash_hrdata),
 
-	.spi_cs_n          (spi_cs_n),
-	.spi_sck           (spi_sck),
-	.spi_mosi          (spi_mosi),
-	.spi_miso          (spi_miso)
+	.spi_cs_n          (xip_cs_n),
+	.spi_sck           (xip_sck),
+	.spi_dout          (xip_dout),
+	.spi_douten        (xip_douten),
+	.spi_din           (xip_din)
 );
 
 ahb_sync_sram #(

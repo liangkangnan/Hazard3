@@ -2,6 +2,7 @@
 
 module fpga_cmod_a7_2p_top (
 	input wire        clk_12m,
+	// When the key is not pressed, the input is low level
 	input wire        rst_n,
 
 	input  wire       tck,
@@ -14,12 +15,16 @@ module fpga_cmod_a7_2p_top (
 `ifdef SIMULATION
 	output wire       dump_wave_en,
 	input  wire [31:0]reset_offset,
+	output wire       xip_cs_n,
+	output wire       xip_sck,
+	output wire [3:0] xip_dout,
+	output wire [3:0] xip_douten,
+	input  wire [3:0] xip_din,
+`else
+	output wire       xip_cs_n,
+	output wire       xip_sck,
+	inout  wire [3:0] xip_io,
 `endif
-
-	output wire       spi_cs_n,
-	output wire       spi_sck,
-	output wire       spi_mosi,
-	input  wire       spi_miso,
 
 	output wire       uart_tx,
 	input  wire       uart_rx
@@ -46,7 +51,11 @@ module fpga_cmod_a7_2p_top (
         .SHIFT (5)
     ) rstgen (
         .clk         (clk_sys),
+`ifdef SIMULATION
         .force_rst_n (rst_n),
+`else
+        .force_rst_n (~rst_n),
+`endif
         .rst_n       (rst_n_sys)
     );
 
@@ -65,6 +74,19 @@ module fpga_cmod_a7_2p_top (
         .i     (tck),
         .o     (led)
     );
+
+`ifdef SIMULATION
+
+`else
+	wire [3:0] xip_din;
+	wire [3:0] xip_douten;
+	wire [3:0] xip_dout;
+
+	for (genvar j = 0; j < 4; j = j + 1) begin : xip_pin_data
+		assign xip_io[j] = xip_douten[j] ? xip_dout[j] : 1'bz;
+		assign xip_din[j] = xip_io[j];
+	end
+`endif
 
     cmod_a7_2p_soc #(
         .CLK_MHZ        (12),
@@ -87,10 +109,11 @@ module fpga_cmod_a7_2p_top (
         .reset_offset   (32'h0000_0040),
 `endif
 
-        .spi_cs_n       (spi_cs_n),
-        .spi_sck        (spi_sck),
-        .spi_mosi       (spi_mosi),
-        .spi_miso       (spi_miso),
+		.xip_cs_n       (xip_cs_n),
+		.xip_sck        (xip_sck),
+		.xip_dout       (xip_dout),
+		.xip_douten     (xip_douten),
+		.xip_din        (xip_din),
 
         .uart_tx        (uart_tx),
         .uart_rx        (uart_rx)

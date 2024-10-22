@@ -17,7 +17,7 @@ list ../../../../soc/peri/hazard3_riscv_timer.f
 file ../../../../libfpga/common/reset_sync.v
 
 list ../../../../libfpga/peris/uart/uart.f
-list ../../../../libfpga/peris/spi_03h_xip/spi_03h_xip.f
+list ../../../../libfpga/peris/spi_qspi_xip/spi_qspi_xip.f
 list ../../../../libfpga/mem/ahb_cache.f
 list ../../../../libfpga/mem/ahb_sync_sram.f
 
