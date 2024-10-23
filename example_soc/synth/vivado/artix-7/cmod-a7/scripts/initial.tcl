@@ -29,7 +29,7 @@ if {[get_filesets -quiet constrs_1] eq ""} {
 }
 
 # 添加约束文件
-add_files -norecurse -fileset constrs_1 [glob -directory $constrsdir {*.xdc}]
+add_files -norecurse -fileset constrs_1 $constrsdir/hazard3.xdc
 
 # 创建输出目录
 file mkdir $outdir
