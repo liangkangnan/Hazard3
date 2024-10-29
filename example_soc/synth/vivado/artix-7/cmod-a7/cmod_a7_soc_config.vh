@@ -42,3 +42,4 @@ localparam FAST_BRANCHCMP      = 1;
 localparam RESET_REGFILE       = 0;
 localparam BRANCH_PREDICTOR    = 1;
 localparam MTVEC_WMASK         = 32'hfffffffd;
+localparam ICACHE              = 1;

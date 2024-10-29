@@ -571,6 +571,92 @@ apb_splitter #(
 // actually enter an infinite crash loop after reset if memory is
 // zero-initialised so don't leave the little guy hanging too long)
 
+generate
+if (ICACHE == 1) begin: has_icache
+
+wire               dst_hready_resp;
+wire               dst_hready;
+wire               dst_hresp;
+wire [W_ADDR-1:0]  dst_haddr;
+wire               dst_hwrite;
+wire [1:0]         dst_htrans;
+wire [2:0]         dst_hsize;
+wire [2:0]         dst_hburst;
+wire [3:0]         dst_hprot;
+wire               dst_hmastlock;
+wire [W_DATA-1:0]  dst_hwdata;
+wire [W_DATA-1:0]  dst_hrdata;
+
+ahb_cache_readonly #(
+	.N_WAYS(2),
+	.W_LINE(128),
+	.DEPTH(128) // Capacity in bits = DEPTH * W_LINE * N_WAYS.
+) icache (
+	.clk               (clk),
+	.rst_n             (rst_n),
+
+	.src_hready_resp   (flash_hready_resp),
+	.src_hready        (flash_hready),
+	.src_hresp         (flash_hresp),
+	.src_haddr         (flash_haddr),
+	.src_hwrite        (flash_hwrite),
+	.src_htrans        (flash_htrans),
+	.src_hsize         (flash_hsize),
+	.src_hburst        (flash_hburst),
+	.src_hprot         (flash_hprot),
+	.src_hmastlock     (flash_hmastlock),
+	.src_hwdata        (flash_hwdata),
+	.src_hrdata        (flash_hrdata),
+
+	.dst_hready_resp   (dst_hready_resp),
+	.dst_hready        (dst_hready),
+	.dst_hresp         (dst_hresp),
+	.dst_haddr         (dst_haddr),
+	.dst_hwrite        (dst_hwrite),
+	.dst_htrans        (dst_htrans),
+	.dst_hsize         (dst_hsize),
+	.dst_hburst        (dst_hburst),
+	.dst_hprot         (dst_hprot),
+	.dst_hmastlock     (dst_hmastlock),
+	.dst_hwdata        (dst_hwdata),
+	.dst_hrdata        (dst_hrdata)
+);
+
+spi_qspi_xip xip_u (
+	.clk               (clk),
+	.rst_n             (rst_n),
+
+	.apbs_psel         (xip_psel),
+	.apbs_penable      (xip_penable),
+	.apbs_pwrite       (xip_pwrite),
+	.apbs_paddr        (xip_paddr),
+	.apbs_pwdata       (xip_pwdata),
+	.apbs_prdata       (xip_prdata),
+	.apbs_pready       (xip_pready),
+	.apbs_pslverr      (xip_pslverr),
+
+	.ahbls_hready_resp (dst_hready_resp),
+	.ahbls_hready      (dst_hready),
+	.ahbls_hresp       (dst_hresp),
+	.ahbls_haddr       (dst_haddr),
+	.ahbls_hwrite      (dst_hwrite),
+	.ahbls_htrans      (dst_htrans),
+	.ahbls_hsize       (dst_hsize),
+	.ahbls_hburst      (dst_hburst),
+	.ahbls_hprot       (dst_hprot),
+	.ahbls_hmastlock   (dst_hmastlock),
+	.ahbls_hwdata      (dst_hwdata),
+	.ahbls_hrdata      (dst_hrdata),
+
+	.spi_cs_n          (xip_cs_n),
+	.spi_sck           (xip_sck),
+	.spi_dout          (xip_dout),
+	.spi_douten        (xip_douten),
+	.spi_din           (xip_din)
+);
+
+end else begin: no_icache
+
 spi_qspi_xip xip_u (
 	.clk               (clk),
 	.rst_n             (rst_n),
@@ -603,6 +689,9 @@ spi_qspi_xip xip_u (
 	.spi_douten        (xip_douten),
 	.spi_din           (xip_din)
 );
+
+end
+endgenerate
 
 ahb_sync_sram #(
 	.DEPTH (IRAM_DEPTH)
