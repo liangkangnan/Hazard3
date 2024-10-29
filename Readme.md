@@ -363,3 +363,24 @@ To reproduce this in the RTL simulator, use the top-level Makefile in [test/sim/
 The default flags are appropriate for the non-multilib toolchain build, and achieve 3.74 CoreMark/MHz. To achieve the full 3.81 CoreMark/MHz, change the ISA variant in `core_portme.mak` to `rv32ima_zicsr_zifencei_zba_zbb_zbkb_zbs`. See the comments in that file for an explanation of why this makes a difference.
 
 See the RP2350 datasheet for details of the Hazard3 configuration used by that chip. The default `tb_cxxrtl` build uses the same configuration as RP2350, except that it also enables the Zbc extension (which is not emitted by GCC 14 as it is not useful for general-purpose code).
+
+# My Contribution
+
+1.Add synth support for Xilinx Artix-7 Serial FPGA(using Vivado).
+
+See  example_soc/synth/vivado/artix-7/cmod-a7
+
+2.Add yosys simulator for RTL verification.
+
+See test/sim/tb_yosys
+
+3.Add some FPGA examples for cmod-a7 board
+
+See test/fpga
+
+4.Add flash support for cmod-a7 in openocd
+
+See [my openocd repo](https://github.com/liangkangnan/riscv-openocd).
+
+
+
