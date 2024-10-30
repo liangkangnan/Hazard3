@@ -12,6 +12,7 @@ BUILD_DIR := build-$(patsubst %.f,%,$(DOTF))
 CLANGXX   := clang++-14
 
 MEM_KB := 128
+ICACHE := 1
 
 .PHONY: clean all lint
 
@@ -29,7 +30,7 @@ clean::
 	rm -rf $(BUILD_DIR) $(TBEXEC)
 
 $(TBEXEC): $(BUILD_DIR)/dut.cpp tb_top.cpp
-	$(CLANGXX) -O3 -std=c++14 -I $(shell yosys-config --datdir)/include/backends/cxxrtl/runtime -I $(BUILD_DIR) -DMEM_KB=$(MEM_KB) -DHAS_FLASH tb_top.cpp -o $(TBEXEC)
+	$(CLANGXX) -O3 -std=c++14 -I $(shell yosys-config --datdir)/include/backends/cxxrtl/runtime -I $(BUILD_DIR) -DMEM_KB=$(MEM_KB) -DICACHE=$(ICACHE) -DHAS_FLASH tb_top.cpp -o $(TBEXEC)
 
 lint:
 	verilator --lint-only --top-module $(TOP) -I$(HDL) $(SIM_SRCS)

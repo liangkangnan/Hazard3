@@ -378,12 +378,22 @@ int main(int argc, char **argv, char **env)
 			printf("Max cycles reached\n");
 			timed_out = true;
 		}
+
 		if (got_exit_cmd)
+			break;
+
+		if (top.p_sim__finish)
 			break;
     }
 
     if (sock_fd > 0)
         close(sock_fd);
+
+#if (ICACHE == 1)
+    uint32_t hit = top.p_u__fpga_2e_soc__u_2e_has__icache_2e_icache_2e_hit__counter.get<uint32_t>();
+    uint32_t req = top.p_u__fpga_2e_soc__u_2e_has__icache_2e_icache_2e_req__counter.get<uint32_t>();
+    printf("ICache hit: %4.2f\n", (float)((hit * 100.0) / req));
+#endif
 
 /*
     std::ofstream mem_fd;
