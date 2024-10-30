@@ -23,6 +23,7 @@ module sim_ctrl #(
 	input wire                rst_n,
 
 	output wire               dump_wave_en,
+	output wire               sim_finish,
 
 	output wire               ahbls_hready_resp,
 	input  wire               ahbls_hready,
@@ -49,12 +50,14 @@ module sim_ctrl #(
     reg ahb_write_aphase_q;
     reg [W_ADDR-1:0] addr_q;
     reg dump_wave_en_q;
+    reg finish;
 
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             ahb_write_aphase_q <= 1'b0;
             addr_q <= {W_ADDR{1'b0}};
             dump_wave_en_q <= 1'b0;
+            finish <= 1'b0;
         end else begin
             ahb_write_aphase_q <= ahb_write_aphase_d;
             if (ahb_write_aphase_d)
@@ -68,6 +71,7 @@ module sim_ctrl #(
                     dump_wave_en_q <= ahbls_hwdata[0];
                 end else if (addr_q[7:0] == ADDR_EXIT) begin
                     $display("APP req exit, code = %d", ahbls_hwdata);
+                    finish <= 1'b1;
                     //$finish;
                 end
             end
@@ -75,6 +79,7 @@ module sim_ctrl #(
     end
 
     assign dump_wave_en = dump_wave_en_q;
+    assign sim_finish = finish;
 
     assign ahbls_hresp = 1'b0;
     assign ahbls_hready_resp = 1'b1;

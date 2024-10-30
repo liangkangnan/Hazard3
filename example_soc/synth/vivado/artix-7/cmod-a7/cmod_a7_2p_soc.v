@@ -26,6 +26,7 @@ module cmod_a7_2p_soc #(
 
 `ifdef SIMULATION
 	output wire              dump_wave_en,
+	output wire              sim_finish,
 `endif
 
 	input  wire [31:0]       reset_offset,
@@ -739,6 +740,7 @@ sim_ctrl sim_ctrl_u (
 	.rst_n             (rst_n),
 
 	.dump_wave_en      (dump_wave_en),
+	.sim_finish        (sim_finish),
 
 	.ahbls_hready_resp (sim_ctrl_hready_resp),
 	.ahbls_hready      (sim_ctrl_hready),

@@ -14,6 +14,7 @@ module fpga_cmod_a7_2p_top (
 
 `ifdef SIMULATION
 	output wire       dump_wave_en,
+	output wire       sim_finish,
 	input  wire [31:0]reset_offset,
 	output wire       xip_cs_n,
 	output wire       xip_sck,
@@ -104,6 +105,7 @@ module fpga_cmod_a7_2p_top (
 
 `ifdef SIMULATION
         .dump_wave_en   (dump_wave_en),
+        .sim_finish     (sim_finish),
         .reset_offset   (reset_offset),
 `else
         .reset_offset   (32'h0000_0040),

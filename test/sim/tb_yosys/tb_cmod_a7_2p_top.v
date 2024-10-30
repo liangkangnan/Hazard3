@@ -10,6 +10,7 @@ module tb_top (
 	output wire       tdo,
 
 	output wire       dump_wave_en,
+	output wire       sim_finish,
 	input  wire [31:0]reset_offset,
 
 	output wire       led
@@ -30,6 +31,7 @@ module tb_top (
         .tdo(tdo),
         .led(led),
         .dump_wave_en(dump_wave_en),
+        .sim_finish(sim_finish),
         .reset_offset(reset_offset),
         .xip_cs_n(xip_cs),
         .xip_sck(xip_sck),
