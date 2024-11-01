@@ -111,10 +111,38 @@ check_irq_before_exit:
 .p2align 4
 .global __soft_vector_table
 __soft_vector_table:
-.word isr_uart
-.word isr_irq1
-.word isr_irq2
-.word isr_irq3
+.word external_isr0
+.word external_isr1
+.word external_isr2
+.word external_isr3
+.word external_isr4
+.word external_isr5
+.word external_isr6
+.word external_isr7
+.word external_isr8
+.word external_isr9
+.word external_isr10
+.word external_isr11
+.word external_isr12
+.word external_isr13
+.word external_isr14
+.word external_isr15
+.word external_isr16
+.word external_isr17
+.word external_isr18
+.word external_isr19
+.word external_isr20
+.word external_isr21
+.word external_isr22
+.word external_isr23
+.word external_isr24
+.word external_isr25
+.word external_isr26
+.word external_isr27
+.word external_isr28
+.word external_isr29
+.word external_isr30
+.word external_isr31
 
 // all default trap handlers do nothing, and we can check for them being set to our
 // default values by seeing if they point to somewhere between __default_isrs_start and __default_isrs_end
@@ -130,10 +158,38 @@ __default_isrs_start:
 \name:
 .endm
 
-decl_isr isr_uart
-decl_isr isr_irq1
-decl_isr isr_irq2
-decl_isr isr_irq3
+decl_isr external_isr0
+decl_isr external_isr1
+decl_isr external_isr2
+decl_isr external_isr3
+decl_isr external_isr4
+decl_isr external_isr5
+decl_isr external_isr6
+decl_isr external_isr7
+decl_isr external_isr8
+decl_isr external_isr9
+decl_isr external_isr10
+decl_isr external_isr11
+decl_isr external_isr12
+decl_isr external_isr13
+decl_isr external_isr14
+decl_isr external_isr15
+decl_isr external_isr16
+decl_isr external_isr17
+decl_isr external_isr18
+decl_isr external_isr19
+decl_isr external_isr20
+decl_isr external_isr21
+decl_isr external_isr22
+decl_isr external_isr23
+decl_isr external_isr24
+decl_isr external_isr25
+decl_isr external_isr26
+decl_isr external_isr27
+decl_isr external_isr28
+decl_isr external_isr29
+decl_isr external_isr30
+decl_isr external_isr31
 // fall through
 
 // All unhandled USER IRQs fall through to here. Note there is no way to get

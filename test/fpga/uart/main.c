@@ -6,6 +6,7 @@
 #define UART_IRQ_NUM         0
 #define UART_IRQ_PRIORITY    3
 
+void uart_irq_handler();
 
 int main()
 {
@@ -18,6 +19,7 @@ int main()
 
     h3irq_enable(UART_IRQ_NUM, true);
     h3irq_set_priority(UART_IRQ_NUM, UART_IRQ_PRIORITY);
+    h3irq_set_external_irq_handler(UART_IRQ_NUM, uart_irq_handler);
 
     uart_txfifo_not_full_irq_enable(true);
     uart_rxfifo_not_empty_irq_enable(true);
@@ -29,7 +31,7 @@ int main()
 	return 0;
 }
 
-void isr_uart()
+void uart_irq_handler()
 {
     if (uart_txfifo_not_full_irq_is_enabled() && (!uart_txfifo_full())) {
         uart_puts("uart tx fifo not full irq\n");

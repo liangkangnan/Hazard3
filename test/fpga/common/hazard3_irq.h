@@ -15,6 +15,8 @@
 #define h3irq_array_set(csr, index, data) (set_csr(csr, (index) | ((uint32_t)(data) << 16)))
 #define h3irq_array_clear(csr, index, data) (clear_csr(csr, (index) | ((uint32_t)(data) << 16)))
 
+typedef void (*irq_handler_t)(void);
+
 static inline void h3irq_enable(unsigned int irq, bool enable) {
 	if (enable) {
 		h3irq_array_set(hazard3_csr_meiea, irq >> 4, 1u << (irq & 0xfu));
@@ -55,6 +57,15 @@ static inline void h3irq_set_priority(unsigned int irq, uint32_t priority) {
 	// it may already be in an older stack frame)
 	h3irq_array_clear(hazard3_csr_meipra, irq >> 2, 0xfu << (4 * (irq & 0x3)));
 	h3irq_array_set(hazard3_csr_meipra, irq >> 2, (priority & 0xfu) << (4 * (irq & 0x3)));
+}
+
+static inline irq_handler_t *get_external_irq_table() {
+	extern uintptr_t __soft_vector_table;
+	return (irq_handler_t *) &__soft_vector_table;
+}
+
+static inline void h3irq_set_external_irq_handler(uint32_t num, irq_handler_t handler) {
+	get_external_irq_table()[num] = handler;
 }
 
 static inline void global_irq_enable(bool en) {
