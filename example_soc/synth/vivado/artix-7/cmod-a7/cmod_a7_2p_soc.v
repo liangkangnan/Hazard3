@@ -309,7 +309,7 @@ hazard3_cpu_2port #(
 	.dbg_sbus_wdata             (sbus_wdata),
 	.dbg_sbus_rdata             (sbus_rdata),
 
-	.irq                        ({3'h0, uart_irq}),
+	.irq                        ({{NUM_IRQS-1{1'b0}}, uart_irq}),
 
 	.soft_irq                   (1'b0),
 	.timer_irq                  (timer_irq)
