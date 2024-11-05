@@ -45,7 +45,7 @@ module hazard3_irq_ctrl #(
 `include "hazard3_csr_addr.vh"
 
 localparam MAX_IRQS = 512;
-localparam [3:0] IRQ_PRIORITY_MASK = ~(4'hf >> IRQ_PRIORITY_BITS);
+localparam [3:0] IRQ_PRIORITY_MASK = ~(4'hf << IRQ_PRIORITY_BITS);
 localparam W_IRQ_INDEX = $clog2(MAX_IRQS);
 
 // ----------------------------------------------------------------------------
