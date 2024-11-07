@@ -13,6 +13,7 @@ typedef struct {
 	volatile uint32_t set_softirq;
 	volatile uint32_t clr_softirq;
 	volatile uint32_t dump_wave;
+	volatile uint32_t ext_irq;
 } sim_ctrl_t;
 
 #define sim_ctrl_io ((sim_ctrl_t *const)SIM_CTRL_BASE)
@@ -41,6 +42,26 @@ static inline void tb_exit(uint32_t ret)
 static inline void tb_dump_wave_enable(uint32_t en)
 {
 	sim_ctrl_io->dump_wave = en;
+}
+
+static inline void tb_set_ext_irq(uint32_t irq)
+{
+	sim_ctrl_io->ext_irq |= 1 << irq;
+}
+
+static inline void tb_clear_ext_irq(uint32_t irq)
+{
+	sim_ctrl_io->ext_irq &= ~(1 << irq);
+}
+
+static inline void tb_set_soft_irq()
+{
+	sim_ctrl_io->set_softirq = 0x1;
+}
+
+static inline void tb_clear_soft_irq()
+{
+	sim_ctrl_io->clr_softirq = 0x0;
 }
 
 #endif

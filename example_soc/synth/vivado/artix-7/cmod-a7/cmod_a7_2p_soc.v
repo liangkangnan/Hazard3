@@ -239,6 +239,11 @@ wire              unblock_out;
 wire              uart_irq;
 wire              timer_irq;
 
+`ifdef SIMULATION
+wire [NUM_IRQS-1:0] irq;
+wire                soft_irq;
+`endif
+
 `include "cmod_a7_soc_config.vh"
 
 hazard3_cpu_2port #(
@@ -308,10 +313,13 @@ hazard3_cpu_2port #(
 	.dbg_sbus_err               (sbus_err),
 	.dbg_sbus_wdata             (sbus_wdata),
 	.dbg_sbus_rdata             (sbus_rdata),
-
+`ifdef SIMULATION
+	.irq                        ({irq[NUM_IRQS-1:1], uart_irq | irq[0]}),
+	.soft_irq                   (soft_irq),
+`else
 	.irq                        ({{NUM_IRQS-1{1'b0}}, uart_irq}),
-
 	.soft_irq                   (1'b0),
+`endif
 	.timer_irq                  (timer_irq)
 );
 
@@ -735,12 +743,16 @@ ahb_sync_sram #(
 );
 
 `ifdef SIMULATION
-sim_ctrl sim_ctrl_u (
+sim_ctrl #(
+	.NUM_IRQS(NUM_IRQS)
+) sim_ctrl_u (
 	.clk               (clk),
 	.rst_n             (rst_n),
 
 	.dump_wave_en      (dump_wave_en),
 	.sim_finish        (sim_finish),
+	.irq               (irq),
+	.soft_irq          (soft_irq),
 
 	.ahbls_hready_resp (sim_ctrl_hready_resp),
 	.ahbls_hready      (sim_ctrl_hready),

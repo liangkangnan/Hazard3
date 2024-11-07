@@ -16,6 +16,7 @@
 
 // AHB slave for simulation control.
 module sim_ctrl #(
+	parameter NUM_IRQS = 32,
 	parameter W_DATA = 32,
 	parameter W_ADDR = 32
 ) (
@@ -24,6 +25,8 @@ module sim_ctrl #(
 
 	output wire               dump_wave_en,
 	output wire               sim_finish,
+	output wire [NUM_IRQS-1:0]irq,
+	output wire               soft_irq,
 
 	output wire               ahbls_hready_resp,
 	input  wire               ahbls_hready,
@@ -45,12 +48,15 @@ module sim_ctrl #(
 	localparam ADDR_SET_SOFTIRQ = 8'h10;
 	localparam ADDR_CLR_SOFTIRQ = 8'h14;
 	localparam ADDR_DUMP_WAVE   = 8'h18;
+	localparam ADDR_EXTERNAL_IRQ_FIRE = 8'h1C;
 
     wire ahb_write_aphase_d = ahbls_htrans[1] && ahbls_hready && ahbls_hwrite;
     reg ahb_write_aphase_q;
     reg [W_ADDR-1:0] addr_q;
     reg dump_wave_en_q;
     reg finish;
+    reg [NUM_IRQS-1:0] irq_q;
+    reg soft_irq_q;
 
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
@@ -58,6 +64,8 @@ module sim_ctrl #(
             addr_q <= {W_ADDR{1'b0}};
             dump_wave_en_q <= 1'b0;
             finish <= 1'b0;
+            irq_q <= {NUM_IRQS{1'b0}};
+            soft_irq_q <= 1'b0;
         end else begin
             ahb_write_aphase_q <= ahb_write_aphase_d;
             if (ahb_write_aphase_d)
@@ -73,6 +81,12 @@ module sim_ctrl #(
                     $display("APP req exit, code = %d", ahbls_hwdata);
                     finish <= 1'b1;
                     //$finish;
+                end else if (addr_q[7:0] == ADDR_EXTERNAL_IRQ_FIRE) begin
+                    irq_q <= ahbls_hwdata;
+                end else if (addr_q[7:0] == ADDR_SET_SOFTIRQ) begin
+                    soft_irq_q <= ahbls_hwdata[0];
+                end else if (addr_q[7:0] == ADDR_CLR_SOFTIRQ) begin
+                    soft_irq_q <= ahbls_hwdata[0];
                 end
             end
         end
@@ -80,6 +94,8 @@ module sim_ctrl #(
 
     assign dump_wave_en = dump_wave_en_q;
     assign sim_finish = finish;
+    assign irq = irq_q;
+    assign soft_irq = soft_irq_q;
 
     assign ahbls_hresp = 1'b0;
     assign ahbls_hready_resp = 1'b1;
