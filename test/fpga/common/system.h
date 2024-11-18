@@ -21,9 +21,14 @@ static inline void riscv_set_sp_bottom(uint32_t addr)
     write_csr(hazard3_csr_mspbottom, addr);
 }
 
-static inline void riscv_trigger_soft_irq()
+static inline void riscv_set_soft_irq()
 {
     write_csr(hazard3_csr_mswint, 0x1);
+}
+
+static inline void riscv_clear_soft_irq()
+{
+    write_csr(hazard3_csr_mswint, 0x0);
 }
 
 void clock_init();
