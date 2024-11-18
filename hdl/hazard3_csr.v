@@ -437,8 +437,6 @@ always @ (posedge clk or negedge rst_n) begin
 	end else begin
 		if (wen_m_mode && addr == MSWINT) begin
 			mswint_trigger <= wdata_update[0];
-		end else begin
-			mswint_trigger <= 1'b0;
 		end
 	end
 end
