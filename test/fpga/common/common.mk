@@ -6,36 +6,41 @@ ifndef APP
 $(error Must define application name as APP)
 endif
 
-LDSCRIPT     ?= ../common/iram_dram.ld
+SDK_PATH ?= ..
+
+LDSCRIPT     ?= $(SDK_PATH)/common/iram_dram.ld
 CROSS_PREFIX ?= riscv32-unknown-elf-
 
-INCDIR       += ../common
+INCDIR       += $(SDK_PATH)/common
 
 CCFLAGS      += -mabi=ilp32 -Wl,--gc-sections -Wl,--no-warn-rwx-segments -nostartfiles --specs=nosys.specs -Wl,-Map,$(APP).map
 CCFLAGS      += -Wl,--wrap=malloc -Wl,--wrap=calloc -Wl,--wrap=realloc -Wl,--wrap=free -Wl,--wrap=sprintf -Wl,--wrap=snprintf -Wl,--wrap=vsnprintf
 CCFLAGS      += -Wl,--wrap=printf -Wl,--wrap=vprintf -Wl,--wrap=puts -Wl,--wrap=putchar -Wl,--wrap=getchar
 
-SRCS += ../drivers/uart/src/uart_drv.c
-SRCS += ../drivers/mach_timer/src/mach_timer_drv.c
-SRCS += ../drivers/flash/src/flash_drv.c
-SRCS += ../common/crt0.S ../common/exception_table.S ../common/external_irq_table.S ../common/system.c ../common/exception_handler.c
-SRCS += ../common/syscalls.c
-SRCS += ../common/printf.c
-SRCS += ../common/wrap.c
-SRCS += ../common/delay.c
+SRCS += $(SDK_PATH)/drivers/uart/src/uart_drv.c
+SRCS += $(SDK_PATH)/drivers/mach_timer/src/mach_timer_drv.c
+SRCS += $(SDK_PATH)/drivers/flash/src/flash_drv.c
+SRCS += $(SDK_PATH)/drivers/pio/src/pio_drv.c
+SRCS += $(SDK_PATH)/common/crt0.S $(SDK_PATH)/common/exception_table.S $(SDK_PATH)/common/external_irq_table.S $(SDK_PATH)/common/system.c $(SDK_PATH)/common/exception_handler.c
+SRCS += $(SDK_PATH)/common/syscalls.c
+SRCS += $(SDK_PATH)/common/printf.c
+SRCS += $(SDK_PATH)/common/wrap.c
+SRCS += $(SDK_PATH)/common/delay.c
 
-INCDIR += ../drivers/uart/inc
-INCDIR += ../drivers/mach_timer/inc
-INCDIR += ../drivers/flash/inc
-INCDIR += ../../../example_soc/libfpga/peris/uart
-INCDIR += ../../../example_soc/libfpga/peris/spi_03h_xip
+INCDIR += $(SDK_PATH)/drivers/uart/inc
+INCDIR += $(SDK_PATH)/drivers/mach_timer/inc
+INCDIR += $(SDK_PATH)/drivers/flash/inc
+INCDIR += $(SDK_PATH)/drivers/pio/inc
+INCDIR += $(SDK_PATH)/../../example_soc/libfpga/peris/uart
+INCDIR += $(SDK_PATH)/../../example_soc/libfpga/peris/spi_03h_xip
+INCDIR += $(SDK_PATH)/../../example_soc/libfpga/peris/pio
 
 ###############################################################################
 
 .SUFFIXES:
 .PHONY: all clean
 
-all: ../bootrom/bootrom.bin bin
+all: $(SDK_PATH)/bootrom/bootrom.bin bin
 
 bin: $(APP).bin
 
@@ -49,10 +54,10 @@ $(APP).bin: $(APP).elf
 	$(CROSS_PREFIX)objdump -h $^ > $(APP).dis
 	$(CROSS_PREFIX)objdump -S $^ >> $(APP).dis
 	$(CROSS_PREFIX)size --format=berkeley $^
-	../../../tools/mkflashbin.py ../bootrom/bootrom.bin $(APP).bin $(APP).flash
+	$(SDK_PATH)/../../tools/mkflashbin.py $(SDK_PATH)/bootrom/bootrom.bin $(APP).bin $(APP).flash
 
 $(APP).elf: $(SRCS) $(wildcard %.h)
 	$(CROSS_PREFIX)gcc $(CCFLAGS) $(SRCS) -T $(LDSCRIPT) $(addprefix -I,$(INCDIR)) -o $@
 
-../bootrom/bootrom.bin:
-	make -C ../bootrom/
+$(SDK_PATH)/bootrom/bootrom.bin:
+	make -C $(SDK_PATH)/bootrom/
