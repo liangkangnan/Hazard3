@@ -8,7 +8,14 @@ endif
 
 SDK_PATH ?= ..
 
+ifeq ($(RUN), FLASH)
+LDSCRIPT     ?= $(SDK_PATH)/common/flash_dram.ld
+else ifeq ($(RUN), DRAM)
+LDSCRIPT     ?= $(SDK_PATH)/common/dram.ld
+else
 LDSCRIPT     ?= $(SDK_PATH)/common/iram_dram.ld
+endif
+
 CROSS_PREFIX ?= riscv32-unknown-elf-
 
 INCDIR       += $(SDK_PATH)/common

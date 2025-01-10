@@ -29,7 +29,8 @@ PROVIDE(_stack_size = __stack_size);
 
 MEMORY
 {
-	RAM (xrw) : ORIGIN = 0x20000000, LENGTH = 32K
+	FLASH (rx): ORIGIN = 0x20000000, LENGTH = 26K
+	RAM (xrw) : ORIGIN = 0x20006800, LENGTH = 6K
 }
 
 SECTIONS
@@ -38,14 +39,14 @@ SECTIONS
     {
         *(.vectors);
         . = ALIGN(64);
-    } >RAM
+    } >FLASH AT>FLASH
 
     .reset          :
     {
 		. = ALIGN(4);
         *(.reset);
 		. = ALIGN(4);
-    } >RAM
+    } >FLASH AT>FLASH
 
 	.text           :
 	{
@@ -56,13 +57,13 @@ SECTIONS
 		*(.rodata*)
 		*(.gnu.linkonce.t.*)
 		. = ALIGN(4);
-	} >RAM
+	} >FLASH AT>FLASH 
 
 	.fini :
 	{
 		KEEP(*(SORT_NONE(.fini)))
 		. = ALIGN(4);
-	} >RAM
+	} >FLASH AT>FLASH
 
 	PROVIDE( _etext = . );
 
@@ -71,7 +72,7 @@ SECTIONS
         PROVIDE_HIDDEN (__preinit_array_start = .);
         KEEP (*(.preinit_array))
         PROVIDE_HIDDEN (__preinit_array_end = .);
-	} >RAM 
+	} >FLASH AT>FLASH 
 
 	.init_array     :
 	{
@@ -79,7 +80,7 @@ SECTIONS
         KEEP (*(SORT_BY_INIT_PRIORITY(.init_array.*) SORT_BY_INIT_PRIORITY(.ctors.*)))
         KEEP (*(.init_array EXCLUDE_FILE (*crtbegin.o *crtbegin?.o *crtend.o *crtend?.o ) .ctors))
         PROVIDE_HIDDEN (__init_array_end = .);
-	} >RAM 
+	} >FLASH AT>FLASH 
 
 	.fini_array     :
 	{
@@ -87,7 +88,7 @@ SECTIONS
         KEEP (*(SORT_BY_INIT_PRIORITY(.fini_array.*) SORT_BY_INIT_PRIORITY(.dtors.*)))
         KEEP (*(.fini_array EXCLUDE_FILE (*crtbegin.o *crtbegin?.o *crtend.o *crtend?.o ) .dtors))
         PROVIDE_HIDDEN (__fini_array_end = .);
-	} >RAM 
+	} >FLASH AT>FLASH 
 
 	.ctors          :
 	{
@@ -109,7 +110,7 @@ SECTIONS
         KEEP (*(EXCLUDE_FILE (*crtend.o *crtend?.o ) .ctors))
         KEEP (*(SORT(.ctors.*)))
         KEEP (*(.ctors))
-	} >RAM 
+	} >FLASH AT>FLASH 
 
 	.dtors          :
 	{
@@ -118,19 +119,19 @@ SECTIONS
         KEEP (*(EXCLUDE_FILE (*crtend.o *crtend?.o ) .dtors))
         KEEP (*(SORT(.dtors.*)))
         KEEP (*(.dtors))
-	} >RAM
+	} >FLASH AT>FLASH 
 
 	.dalign         :
 	{
 		. = ALIGN(4);
 		PROVIDE(_data_vma = .);
-	} >RAM
+	} >RAM AT>FLASH	
 
 	.dlalign        :
 	{
 		. = ALIGN(4); 
 		PROVIDE(_data_lma = .);
-	} >RAM
+	} >FLASH AT>FLASH
 
 	.data           :
 	{
@@ -151,8 +152,10 @@ SECTIONS
     	*(.srodata.cst2)
     	*(.srodata .srodata.*)
     	. = ALIGN(4);
+    	*(.qspi.init.inram)
+    	. = ALIGN(4);
 		PROVIDE( _edata = .);
-	} >RAM
+	} >RAM AT>FLASH
 
 	.bss            :
 	{
@@ -165,7 +168,7 @@ SECTIONS
 		*(COMMON*)
 		. = ALIGN(4);
 		PROVIDE( _ebss = .);
-	} >RAM
+	} >RAM AT>FLASH
 
 	PROVIDE( _end = _ebss);
 	PROVIDE( end = . );
