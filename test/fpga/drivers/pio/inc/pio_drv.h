@@ -25,6 +25,8 @@ typedef struct {
     volatile uint32_t irq_intp;
     volatile uint32_t pins_data;
     volatile uint32_t pins_dir;
+    volatile uint32_t pins_data_set;
+    volatile uint32_t pins_data_clr;
     pio_sm_hw_t sm[4];
     volatile uint32_t instr_mem[32];
 } pio_hw_t;
@@ -282,8 +284,8 @@ static inline void pio_sm_config_set_out_shift(pio_sm_config *c, bool shift_righ
  */
 int pio_sm_set_consecutive_pindirs(PIO pio, uint32_t sm, uint32_t pins_base, uint32_t pin_count, bool is_out);
 
-static inline void pio_sm_config_set_clkdiv(pio_sm_config *c, uint32_t div) {
-    c->clkdiv = div << 8;
+static inline void pio_sm_config_set_clkdiv(pio_sm_config *c, uint32_t int_div, uint32_t frac_div) {
+    c->clkdiv = (int_div << 8) | frac_div;
 }
 
 /*! \brief Enable or disable a PIO state machine
@@ -650,6 +652,36 @@ static inline void pio_gpio_dir_put(PIO pio, uint32_t data) {
 
 static inline uint32_t pio_gpio_dir_get(PIO pio) {
     return pio->pins_dir;
+}
+
+static inline void pio_gpio_data_bits_set(PIO pio, uint32_t set_bits) {
+    pio->pins_data_set = set_bits;
+}
+
+static inline void pio_gpio_data_bits_clr(PIO pio, uint32_t clr_bits) {
+    pio->pins_data_clr = clr_bits;
+}
+
+static inline void pio_sm_set_tx_fifo_peek_mode_enabled(PIO pio, uint32_t sm, uint8_t en) {
+    if (en)
+        pio->sm[sm].shiftctrl |= 1 << PIO_SHIFTCTRL0_TXFIFO_PEEK_MODE_LSB;
+    else
+        pio->sm[sm].shiftctrl &= ~(1 << PIO_SHIFTCTRL0_TXFIFO_PEEK_MODE_LSB);
+}
+
+static inline void pio_sm_set_tx_fifo_shadow_mode_enabled(PIO pio, uint32_t sm, uint8_t en) {
+    if (en)
+        pio->sm[sm].shiftctrl |= 1 << PIO_SHIFTCTRL0_TXFIFO_SHADOW_MODE_LSB;
+    else
+        pio->sm[sm].shiftctrl &= ~(1 << PIO_SHIFTCTRL0_TXFIFO_SHADOW_MODE_LSB);
+}
+
+static inline void pio_sm_set_tx_fifo_shadow_update(PIO pio, uint32_t sm) {
+    pio->sm[sm].shiftctrl |= 1 << PIO_SHIFTCTRL0_TXFIFO_SHADOW_UPDATE_LSB;
+}
+
+static inline uint32_t pio_sm_get_tx_fifo_shadow_update_state(PIO pio, uint32_t sm) {
+    return (pio->sm[sm].shiftctrl & PIO_SHIFTCTRL0_TXFIFO_SHADOW_UPDATE_MASK);
 }
 
 #endif
