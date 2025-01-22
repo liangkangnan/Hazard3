@@ -33,13 +33,15 @@ SRCS += $(SDK_PATH)/common/syscalls.c
 SRCS += $(SDK_PATH)/common/printf.c
 SRCS += $(SDK_PATH)/common/wrap.c
 SRCS += $(SDK_PATH)/common/delay.c
+SRCS += $(SDK_PATH)/common/xip_qspi.c
+SRCS += $(SDK_PATH)/common/utils.c
 
 INCDIR += $(SDK_PATH)/drivers/uart/inc
 INCDIR += $(SDK_PATH)/drivers/mach_timer/inc
 INCDIR += $(SDK_PATH)/drivers/flash/inc
 INCDIR += $(SDK_PATH)/drivers/pio/inc
 INCDIR += $(SDK_PATH)/../../example_soc/libfpga/peris/uart
-INCDIR += $(SDK_PATH)/../../example_soc/libfpga/peris/spi_03h_xip
+INCDIR += $(SDK_PATH)/../../example_soc/libfpga/peris/spi_qspi_xip
 INCDIR += $(SDK_PATH)/../../example_soc/libfpga/peris/pio
 
 ###############################################################################
