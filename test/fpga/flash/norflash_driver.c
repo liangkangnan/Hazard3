@@ -5,6 +5,8 @@
 void norflash_init()
 {
     flash_set_cs(1);
+    flash_set_clock_divider(2);
+    flash_enter_cmd_mode();
 }
 
 static void send_cmd(uint8_t cmd)

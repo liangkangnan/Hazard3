@@ -15,6 +15,8 @@ int main()
 	uart_init(115200);
     printf("hello flash\n");
 
+    //tb_dump_wave_enable(1);
+
     norflash_init();
     norflash_sector_erase(0x00);
 
