@@ -243,6 +243,7 @@ wire              unblock_out;
 
 wire              uart_irq;
 wire              timer_irq;
+wire              pio0_irq;
 
 `ifdef SIMULATION
 wire [NUM_IRQS-1:0] irq;
@@ -319,10 +320,10 @@ hazard3_cpu_2port #(
 	.dbg_sbus_wdata             (sbus_wdata),
 	.dbg_sbus_rdata             (sbus_rdata),
 `ifdef SIMULATION
-	.irq                        ({irq[NUM_IRQS-1:1], uart_irq | irq[0]}),
+	.irq                        ({irq[NUM_IRQS-1:2], pio0_irq | irq[1], uart_irq | irq[0]}),
 	.soft_irq                   (soft_irq),
 `else
-	.irq                        ({{NUM_IRQS-1{1'b0}}, uart_irq}),
+	.irq                        ({{NUM_IRQS-2{1'b0}}, pio0_irq, uart_irq}),
 	.soft_irq                   (1'b0),
 `endif
 	.timer_irq                  (timer_irq)
@@ -500,6 +501,15 @@ wire [31:0] bridge_prdata;
 wire        bridge_pready;
 wire        bridge_pslverr;
 
+wire        sysinfo_psel;
+wire        sysinfo_penable;
+wire        sysinfo_pwrite;
+wire [15:0] sysinfo_paddr;
+wire [31:0] sysinfo_pwdata;
+wire [31:0] sysinfo_prdata;
+wire        sysinfo_pready;
+wire        sysinfo_pslverr;
+
 wire        uart_psel;
 wire        uart_penable;
 wire        uart_pwrite;
@@ -564,9 +574,9 @@ ahbl_to_apb apb_bridge_u (
 );
 
 apb_splitter #(
-	.N_SLAVES   (4),
-	.ADDR_MAP   (64'h9000_8000_4000_0000),
-	.ADDR_MASK  (64'hf000_f000_f000_f000)
+	.N_SLAVES   (5),
+	.ADDR_MAP   (80'h9000_8000_4000_1000_0000),
+	.ADDR_MASK  (80'hf000_f000_f000_f000_f000)
 ) inst_apb_splitter (
 	.apbs_paddr   (bridge_paddr),
 	.apbs_psel    (bridge_psel),
@@ -577,14 +587,14 @@ apb_splitter #(
 	.apbs_prdata  (bridge_prdata),
 	.apbs_pslverr (bridge_pslverr),
 
-	.apbm_paddr   ({pio0_paddr   , xip_paddr   , uart_paddr   , timer_paddr  }),
-	.apbm_psel    ({pio0_psel    , xip_psel    , uart_psel    , timer_psel   }),
-	.apbm_penable ({pio0_penable , xip_penable , uart_penable , timer_penable}),
-	.apbm_pwrite  ({pio0_pwrite  , xip_pwrite  , uart_pwrite  , timer_pwrite }),
-	.apbm_pwdata  ({pio0_pwdata  , xip_pwdata  , uart_pwdata  , timer_pwdata }),
-	.apbm_pready  ({pio0_pready  , xip_pready  , uart_pready  , timer_pready }),
-	.apbm_prdata  ({pio0_prdata  , xip_prdata  , uart_prdata  , timer_prdata }),
-	.apbm_pslverr ({pio0_pslverr , xip_pslverr , uart_pslverr , timer_pslverr})
+	.apbm_paddr   ({pio0_paddr   , xip_paddr   , uart_paddr   , sysinfo_paddr,   timer_paddr  }),
+	.apbm_psel    ({pio0_psel    , xip_psel    , uart_psel    , sysinfo_psel,    timer_psel   }),
+	.apbm_penable ({pio0_penable , xip_penable , uart_penable , sysinfo_penable, timer_penable}),
+	.apbm_pwrite  ({pio0_pwrite  , xip_pwrite  , uart_pwrite  , sysinfo_pwrite,  timer_pwrite }),
+	.apbm_pwdata  ({pio0_pwdata  , xip_pwdata  , uart_pwdata  , sysinfo_pwdata,  timer_pwdata }),
+	.apbm_pready  ({pio0_pready  , xip_pready  , uart_pready  , sysinfo_pready,  timer_pready }),
+	.apbm_prdata  ({pio0_prdata  , xip_prdata  , uart_prdata  , sysinfo_prdata,  timer_prdata }),
+	.apbm_pslverr ({pio0_pslverr , xip_pslverr , uart_pslverr , sysinfo_pslverr, timer_pslverr})
 );
 
 // ----------------------------------------------------------------------------
@@ -848,6 +858,20 @@ ahb_sync_sram #(
 );
 `endif
 
+sysinfo_regs sysinfo_u (
+	.clk           (clk),
+	.rst_n         (rst_n),
+
+	.apbs_psel     (sysinfo_psel),
+	.apbs_penable  (sysinfo_penable),
+	.apbs_pwrite   (sysinfo_pwrite),
+	.apbs_paddr    (sysinfo_paddr),
+	.apbs_pwdata   (sysinfo_pwdata),
+	.apbs_prdata   (sysinfo_prdata),
+	.apbs_pready   (sysinfo_pready),
+	.apbs_pslverr  (sysinfo_pslverr)
+);
+
 uart_mini uart_u (
 	.clk          (clk),
 	.rst_n        (rst_n),
@@ -918,6 +942,30 @@ wire pio2_out    = pio_out[2];
 wire pio2_out_en = pio_out_en[2];
 wire pio3_out    = pio_out[3];
 wire pio3_out_en = pio_out_en[3];
+wire pio4_out    = pio_out[4];
+wire pio4_out_en = pio_out_en[4];
+wire pio5_out    = pio_out[5];
+wire pio5_out_en = pio_out_en[5];
+wire pio6_out    = pio_out[6];
+wire pio6_out_en = pio_out_en[6];
+wire pio7_out    = pio_out[7];
+wire pio7_out_en = pio_out_en[7];
+wire pio8_out    = pio_out[8];
+wire pio8_out_en = pio_out_en[8];
+wire pio9_out    = pio_out[9];
+wire pio9_out_en = pio_out_en[9];
+wire pio10_out    = pio_out[10];
+wire pio10_out_en = pio_out_en[10];
+wire pio11_out    = pio_out[11];
+wire pio11_out_en = pio_out_en[11];
+wire pio12_out    = pio_out[12];
+wire pio12_out_en = pio_out_en[12];
+wire pio13_out    = pio_out[13];
+wire pio13_out_en = pio_out_en[13];
+wire pio14_out    = pio_out[14];
+wire pio14_out_en = pio_out_en[14];
+wire pio15_out    = pio_out[15];
+wire pio15_out_en = pio_out_en[15];
 `endif
 
 pio pio0 (
@@ -935,7 +983,8 @@ pio pio0 (
 
 	.gpio_in       (pio_in),
 	.gpio_out      (pio_out),
-	.gpio_dir      (pio_out_en)
+	.gpio_dir      (pio_out_en),
+	.irq           (pio0_irq)
 );
 
 endmodule
