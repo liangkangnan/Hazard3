@@ -17,6 +17,7 @@ typedef struct {
     volatile uint32_t push;
     volatile uint32_t pull;
     volatile uint32_t fstat;
+    volatile uint32_t fctrl;
 } pio_sm_hw_t;
 
 typedef struct {
@@ -547,22 +548,26 @@ static inline void pio_sm_clear_fifos(PIO pio, uint32_t sm) {
  * \ingroup hardware_pio
  */
 typedef enum pio_interrupt_source {
-    pio_sm3_tx_fifo_not_full = 15,      ///< State machine 3 TX FIFO is not full
-    pio_sm2_tx_fifo_not_full = 14,      ///< State machine 2 TX FIFO is not full
-    pio_sm1_tx_fifo_not_full = 13,      ///< State machine 1 TX FIFO is not full
-    pio_sm0_tx_fifo_not_full = 12,      ///< State machine 0 TX FIFO is not full
-    pio_sm3_rx_fifo_not_empty = 11,     ///< State machine 3 RX FIFO is not empty
-    pio_sm2_rx_fifo_not_empty = 10,     ///< State machine 2 RX FIFO is not empty
-    pio_sm1_rx_fifo_not_empty = 9,      ///< State machine 1 RX FIFO is not empty
-    pio_sm0_rx_fifo_not_empty = 8,      ///< State machine 0 RX FIFO is not empty
-    pio_sm_int7               = 7,      ///< State machine interrupt 7
-    pio_sm_int6               = 6,      ///< State machine interrupt 6
-    pio_sm_int5               = 5,      ///< State machine interrupt 5
-    pio_sm_int4               = 4,      ///< State machine interrupt 4
-    pio_sm_int3               = 3,      ///< State machine interrupt 3
-    pio_sm_int2               = 2,      ///< State machine interrupt 2
-    pio_sm_int1               = 1,      ///< State machine interrupt 1
-    pio_sm_int0               = 0,      ///< State machine interrupt 0
+    pio_sm3_tx_fifo_empty_irq = 19,     ///< State machine 3 TX FIFO is empty
+    pio_sm2_tx_fifo_empty_irq = 18,     ///< State machine 2 TX FIFO is empty
+    pio_sm1_tx_fifo_empty_irq = 17,     ///< State machine 1 TX FIFO is empty
+    pio_sm0_tx_fifo_empty_irq = 16,     ///< State machine 0 TX FIFO is empty
+    pio_sm3_tx_fifo_not_full_irq = 15,  ///< State machine 3 TX FIFO is not full
+    pio_sm2_tx_fifo_not_full_irq = 14,  ///< State machine 2 TX FIFO is not full
+    pio_sm1_tx_fifo_not_full_irq = 13,  ///< State machine 1 TX FIFO is not full
+    pio_sm0_tx_fifo_not_full_irq = 12,  ///< State machine 0 TX FIFO is not full
+    pio_sm3_rx_fifo_not_empty_irq = 11, ///< State machine 3 RX FIFO is not empty
+    pio_sm2_rx_fifo_not_empty_irq = 10, ///< State machine 2 RX FIFO is not empty
+    pio_sm1_rx_fifo_not_empty_irq = 9,  ///< State machine 1 RX FIFO is not empty
+    pio_sm0_rx_fifo_not_empty_irq = 8,  ///< State machine 0 RX FIFO is not empty
+    pio_sm_irq7               = 7,      ///< State machine interrupt 7
+    pio_sm_irq6               = 6,      ///< State machine interrupt 6
+    pio_sm_irq5               = 5,      ///< State machine interrupt 5
+    pio_sm_irq4               = 4,      ///< State machine interrupt 4
+    pio_sm_irq3               = 3,      ///< State machine interrupt 3
+    pio_sm_irq2               = 2,      ///< State machine interrupt 2
+    pio_sm_irq1               = 1,      ///< State machine interrupt 1
+    pio_sm_irq0               = 0,      ///< State machine interrupt 0
 } pio_interrupt_source_t;
 
 /*! \brief  Determine if a particular PIO interrupt is set
@@ -662,13 +667,6 @@ static inline void pio_gpio_data_bits_clr(PIO pio, uint32_t clr_bits) {
     pio->pins_data_clr = clr_bits;
 }
 
-static inline void pio_sm_set_tx_fifo_peek_mode_enabled(PIO pio, uint32_t sm, uint8_t en) {
-    if (en)
-        pio->sm[sm].shiftctrl |= 1 << PIO_SHIFTCTRL0_TXFIFO_PEEK_MODE_LSB;
-    else
-        pio->sm[sm].shiftctrl &= ~(1 << PIO_SHIFTCTRL0_TXFIFO_PEEK_MODE_LSB);
-}
-
 static inline void pio_sm_set_tx_fifo_shadow_mode_enabled(PIO pio, uint32_t sm, uint8_t en) {
     if (en)
         pio->sm[sm].shiftctrl |= 1 << PIO_SHIFTCTRL0_TXFIFO_SHADOW_MODE_LSB;
@@ -682,6 +680,88 @@ static inline void pio_sm_set_tx_fifo_shadow_update(PIO pio, uint32_t sm) {
 
 static inline uint32_t pio_sm_get_tx_fifo_shadow_update_state(PIO pio, uint32_t sm) {
     return (pio->sm[sm].shiftctrl & PIO_SHIFTCTRL0_TXFIFO_SHADOW_UPDATE_MASK);
+}
+
+/** \brief FIFO join states
+ *  \ingroup hardware_pio
+ */
+enum pio_fifo_join {
+    PIO_FIFO_JOIN_NONE = 0,    ///< TX FIFO length=4 is used for transmit, RX FIFO length=4 is used for receive
+    PIO_FIFO_JOIN_TX = 1,      ///< TX FIFO length=8 is used for transmit, RX FIFO is disabled
+    PIO_FIFO_JOIN_RX = 2,      ///< RX FIFO length=8 is used for receive, TX FIFO is disabled
+};
+
+/*! \brief Setup the FIFO joining in a state machine configuration
+ *  \ingroup sm_config
+ *
+ * \param c Pointer to the configuration structure to modify
+ * \param join Specifies the join type. \see enum pio_fifo_join
+ */
+static inline void pio_sm_config_set_fifo_join(pio_sm_config *c, enum pio_fifo_join join) {
+    c->shiftctrl = (c->shiftctrl &
+                    ~(PIO_SHIFTCTRL0_FJOIN_RX_MASK |
+                      PIO_SHIFTCTRL0_FJOIN_TX_MASK)) |
+                   (((uint32_t)join) << PIO_SHIFTCTRL0_FJOIN_TX_LSB);
+}
+
+static inline void pio_sm_set_tx_fifo_pull_index(PIO pio, uint32_t sm, uint32_t index) {
+    pio->sm[sm].fctrl = (pio->sm[sm].fctrl & (~PIO_FCTRL0_TXFIFO_PULL_INDEX_MASK)) |
+                        (index << PIO_FCTRL0_TXFIFO_PULL_INDEX_LSB);
+}
+
+static inline uint32_t pio_sm_get_tx_fifo_pull_index(PIO pio, uint32_t sm) {
+    return ((pio->sm[sm].fctrl & PIO_FCTRL0_TXFIFO_PULL_INDEX_MASK) >> PIO_FCTRL0_TXFIFO_PULL_INDEX_LSB);
+}
+
+static inline void pio_sm_set_rx_fifo_pull_index(PIO pio, uint32_t sm, uint32_t index) {
+    pio->sm[sm].fctrl = (pio->sm[sm].fctrl & (~PIO_FCTRL0_RXFIFO_PULL_INDEX_MASK)) |
+                        (index << PIO_FCTRL0_RXFIFO_PULL_INDEX_LSB);
+}
+
+static inline uint32_t pio_sm_get_rx_fifo_pull_index(PIO pio, uint32_t sm) {
+    return ((pio->sm[sm].fctrl & PIO_FCTRL0_RXFIFO_PULL_INDEX_MASK) >> PIO_FCTRL0_RXFIFO_PULL_INDEX_LSB);
+}
+
+static inline void pio_sm_set_tx_fifo_push_index(PIO pio, uint32_t sm, uint32_t index) {
+    pio->sm[sm].fctrl = (pio->sm[sm].fctrl & (~PIO_FCTRL0_TXFIFO_PUSH_INDEX_MASK)) |
+                        (index << PIO_FCTRL0_TXFIFO_PUSH_INDEX_LSB);
+}
+
+static inline uint32_t pio_sm_get_tx_fifo_push_index(PIO pio, uint32_t sm) {
+    return ((pio->sm[sm].fctrl & PIO_FCTRL0_TXFIFO_PUSH_INDEX_MASK) >> PIO_FCTRL0_TXFIFO_PUSH_INDEX_LSB);
+}
+
+static inline void pio_sm_set_rx_fifo_push_index(PIO pio, uint32_t sm, uint32_t index) {
+    pio->sm[sm].fctrl = (pio->sm[sm].fctrl & (~PIO_FCTRL0_RXFIFO_PUSH_INDEX_MASK)) |
+                        (index << PIO_FCTRL0_RXFIFO_PUSH_INDEX_LSB);
+}
+
+static inline uint32_t pio_sm_get_rx_fifo_push_index(PIO pio, uint32_t sm) {
+    return ((pio->sm[sm].fctrl & PIO_FCTRL0_RXFIFO_PUSH_INDEX_MASK) >> PIO_FCTRL0_RXFIFO_PUSH_INDEX_LSB);
+}
+
+static inline void pio_sm_tx_fifo_read_enable(PIO pio, uint32_t sm, bool en) {
+    if (en)
+        pio->sm[sm].fctrl |= 1 << PIO_FCTRL0_TXFIFO_READ_EN_LSB;
+    else
+        pio->sm[sm].fctrl &= ~(1 << PIO_FCTRL0_TXFIFO_READ_EN_LSB);
+}
+
+static inline void pio_sm_rx_fifo_write_enable(PIO pio, uint32_t sm, bool en) {
+    if (en)
+        pio->sm[sm].fctrl |= 1 << PIO_FCTRL0_RXFIFO_WRITE_EN_LSB;
+    else
+        pio->sm[sm].fctrl &= ~(1 << PIO_FCTRL0_RXFIFO_WRITE_EN_LSB);
+}
+
+static inline void pio_sm_set_tx_fifo_count(PIO pio, uint32_t sm, uint32_t count) {
+    pio->sm[sm].fctrl = (pio->sm[sm].fctrl & (~PIO_FCTRL0_TX_FIFO_DATA_COUNT_MASK)) |
+                        (count << PIO_FCTRL0_TX_FIFO_DATA_COUNT_LSB);
+}
+
+static inline void pio_sm_set_rx_fifo_count(PIO pio, uint32_t sm, uint32_t count) {
+    pio->sm[sm].fctrl = (pio->sm[sm].fctrl & (~PIO_FCTRL0_RX_FIFO_DATA_COUNT_MASK)) |
+                        (count << PIO_FCTRL0_RX_FIFO_DATA_COUNT_LSB);
 }
 
 #endif
