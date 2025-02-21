@@ -16,7 +16,7 @@ int main()
 
     printf("hello pio multi sm!!!\n");
 
-    pio_sm_config config0;
+    pio_sm_config config0 = {0};
     pio_sm_config_set_set_pins(&config0, 8, 1);
     pio_sm_config_set_wrap(&config0, multi_sm_wrap_bottom, multi_sm_wrap_top);
     pio_sm_config_set_clkdiv(&config0, 12000000, 0);
@@ -27,7 +27,7 @@ int main()
     pio_sm_init(pio, sm0, 0, &config0);
     pio_sm_set_enabled(pio, sm0, true);
 
-    pio_sm_config config1;
+    pio_sm_config config1 = {0};
     pio_sm_config_set_set_pins(&config1, 9, 1);
     pio_sm_config_set_wrap(&config1, multi_sm_wrap_bottom + 2, multi_sm_wrap_top + 2);
     pio_sm_config_set_clkdiv(&config1, 6000000, 0);

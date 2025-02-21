@@ -18,15 +18,13 @@ int main()
 
     printf("hello pio uart rx!!!\n");
 
-    pio_sm_set_enabled(pio, sm, false);
-
-    pio_sm_config config;
+    pio_sm_config config = {0};
     pio_sm_config_set_wrap(&config, 0, uart_rx_program.length - 1);
     pio_sm_config_set_clkdiv(&config, 12000000 / 4 / BAUD, 0);
     pio_add_program_at_offset(pio, &uart_rx_program, 0);
 
     pio_sm_config_set_in_pins(&config, 30);
-    pio_sm_config_set_in_shift(&config, true, false, 8);
+    pio_sm_config_set_in_shift(&config, true, true, 8);
 
     pio_sm_set_consecutive_pindirs(pio, sm, 30, 1, false);
 

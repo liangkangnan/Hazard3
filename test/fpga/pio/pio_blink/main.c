@@ -14,7 +14,7 @@ int main()
 
     printf("hello pio blink!!!\n");
 
-    pio_sm_config config;
+    pio_sm_config config = {0};
     pio_sm_config_set_set_pins(&config, 8, 4);
     pio_sm_config_set_wrap(&config, 0, blink_program.length - 1);
     pio_sm_config_set_clkdiv(&config, 12000000, 0);

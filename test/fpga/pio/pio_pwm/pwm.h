@@ -2,18 +2,13 @@
 #define _PIO_PWM_H_
 
 #define pwm_wrap_target 0
-#define pwm_wrap        5
+#define pwm_wrap        0
 
 #define pwm_wrap_bottom pwm_wrap_target
 #define pwm_wrap_top    pwm_wrap
 
 static const uint16_t pwm_program_instructions[] = {
-    0x9080,
-    0xa047,
-    0x0082,
-    0x9880,
-    0xa047,
-    0x0085,
+    0x6001,
 };
 
 static const struct pio_program pwm_program = {

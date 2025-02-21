@@ -25,9 +25,7 @@ int main()
 
     printf("hello pio uart tx!!!\n");
 
-    pio_sm_set_enabled(pio, sm, false);
-
-    pio_sm_config config;
+    pio_sm_config config = {0};
     pio_sm_config_set_wrap(&config, 0, uart_tx_program.length - 1);
     pio_sm_config_set_clkdiv(&config, 12000000 / 4 / BAUD, 0);
     pio_add_program_at_offset(pio, &uart_tx_program, 0);

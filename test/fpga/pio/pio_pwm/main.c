@@ -11,34 +11,48 @@
 PIO pio = pio0;
 uint32_t sm = 0;
 
-// 占空比：3%~97%，step=1%
-void pio_pwm_set_duty(PIO pio, uint32_t sm, uint32_t low_count, uint32_t high_count)
+// 占空比：0%~100%，step=1%
+void pio_pwm_set_duty(PIO pio, uint32_t sm, uint32_t duty)
 {
-    static uint32_t low_count_prev;
-    static uint32_t high_count_prev;
-    static uint8_t first_update = 1;
+    uint32_t low_count;
+    uint32_t data[4];
+    uint32_t *p;
+    uint32_t i;
+    uint32_t count;
 
     while (pio_sm_get_tx_fifo_shadow_update_state(pio, sm));
 
-    // PIO程序里会多2条指令+1次循环，因此需要减3
-    low_count -= 3;
-    high_count -= 3;
+    if (duty > 100)
+        duty = 100;
 
-    if (first_update) {
-        pio_sm_put(pio, sm, low_count);
-        pio_sm_put(pio, sm, high_count);
-        first_update = 0;
-    } else {
-        pio_sm_put(pio, sm, low_count_prev);
-        pio_sm_put(pio, sm, high_count_prev);
+    low_count = 100 - duty;
+
+    for (i = 0; i < 4; i++)
+        data[i] = 0xffffffff;
+
+    p = data;
+    while (low_count > 0) {
+        if (low_count >= 25) {
+            count = 25;
+            *p = 0x00;
+        } else {
+            count = low_count;
+            for (i = 0; i < count; i++)
+                *p &= ~(1 << i);
+        }
+        p++;
+        low_count -= count;
     }
-    pio_sm_put(pio, sm, low_count);
-    pio_sm_put(pio, sm, high_count);
+
+    pio_sm_rx_fifo_write_enable(pio, sm, true);
+    pio_sm_set_rx_fifo_push_index(pio, sm, 0);
+    for (i = 0; i < 4; i++) {
+        pio_sm_put(pio, sm, data[i]);
+        //printf("put data[%d]=0x%x\n", i, data[i]);
+    }
+    pio_sm_rx_fifo_write_enable(pio, sm, false);
 
     pio_sm_set_tx_fifo_shadow_update(pio, sm);
-
-    low_count_prev = low_count;
-    high_count_prev = high_count;
 }
 
 int main()
@@ -47,34 +61,37 @@ int main()
 
     printf("hello pio pwm!!!\n");
 
-    pio_sm_set_enabled(pio, sm, false);
-
-    pio_sm_config config;
-    pio_sm_config_set_sideset(&config, 8, 1, true, false);
+    pio_sm_config config = {0};
+    pio_sm_config_set_out_pins(&config, 8, 1);
+    pio_sm_config_set_out_shift(&config, true, true, 25);
     pio_sm_config_set_wrap(&config, 0, pwm_program.length - 1);
     pio_sm_config_set_clkdiv(&config, 120, 0);
+    pio_sm_config_set_fifo_join(&config, PIO_FIFO_JOIN_TX);
     pio_add_program_at_offset(pio, &pwm_program, 0);
 
     pio_sm_set_consecutive_pindirs(pio, sm, 8, 1, true);
     pio_sm_init(pio, sm, 0, &config);
 
-    pio_sm_set_tx_fifo_peek_mode_enabled(pio, sm, 1);
     pio_sm_set_tx_fifo_shadow_mode_enabled(pio, sm, 1);
 
-    printf("pio pwm started\n");
-
-    pio_pwm_set_duty(pio, sm, 80, 20);
+    // init duty: 0%
+    pio_sm_clear_fifos(pio, sm);
+	pio_sm_put(pio, sm, 0x00);
+	pio_sm_put(pio, sm, 0x00);
+	pio_sm_put(pio, sm, 0x00);
+	pio_sm_put(pio, sm, 0x00);
+    pio_sm_clear_fifos(pio, sm);
 
     pio_sm_set_enabled(pio, sm, true);
 
-    printf("end\n");
+    printf("pio pwm started\n");
 
     while (1) {
-        // 1KHz, 20%
-        pio_pwm_set_duty(pio, sm, 80, 20);
+        // 1KHz, 10%
+        pio_pwm_set_duty(pio, sm, 10);
         delay_ms(500);
-        // 1KHz, 70%
-        pio_pwm_set_duty(pio, sm, 30, 70);
+        // 1KHz, 90%
+        pio_pwm_set_duty(pio, sm, 90);
         delay_ms(500);
     }
 }

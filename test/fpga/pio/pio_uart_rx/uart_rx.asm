@@ -10,4 +10,3 @@
 bitloop:                ; Loop 8 times
     in pins, 1          ; Sample data
     jmp x-- bitloop [2] ; Each iteration is 8 cycles
-    push

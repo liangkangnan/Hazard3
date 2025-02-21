@@ -12,6 +12,8 @@
 #define I2C_SCL_PIN  0
 #define I2C_SDA_PIN  1
 
+#define SLAVE_ADDR  0xA0
+
 PIO pio = pio0;
 uint32_t sm = 0;
 
@@ -59,7 +61,7 @@ static uint8_t _i2c_read()
 
     pio_sm_put_blocking(pio, sm, data);
 
-    return (pio_sm_get_blocking(pio, sm) >> 24);
+    return pio_sm_get_blocking(pio, sm);
 }
 
 uint32_t i2c_write(uint8_t slave_addr, uint32_t reg_addr, uint8_t *buf, uint32_t num)
@@ -88,7 +90,7 @@ uint32_t i2c_read(uint8_t slave_addr, uint32_t reg_addr, uint8_t *buf, uint32_t 
     _i2c_start();
     _i2c_write(slave_addr | 0x1);
     for (i = 0; i < num; i++)
-        buf[i] = bits_revert(_i2c_read(), 8);
+        buf[i] = _i2c_read();
     _i2c_stop();
 
     return num;
@@ -100,13 +102,15 @@ int main()
 
     printf("hello pio i2c!!!\n");
 
+    pio_sm_set_enabled(pio, sm, false);
+
     pio_add_program_at_offset(pio, &i2c_program, 0);
 
     pio_sm_config config;
     pio_sm_config_set_wrap(&config, i2c_wrap_bottom, i2c_wrap_top);
     pio_sm_config_set_clkdiv(&config, 60, 0);
     pio_sm_config_set_in_pins(&config, I2C_SDA_PIN);
-    pio_sm_config_set_in_shift(&config, true, false, 8);
+    pio_sm_config_set_in_shift(&config, false, false, 8);
     pio_sm_config_set_out_pins(&config, I2C_SDA_PIN, 1);
     pio_sm_config_set_out_shift(&config, false, false, 8);
     pio_sm_config_set_sideset(&config, I2C_SCL_PIN, 1, true, false);
@@ -122,12 +126,12 @@ int main()
     pio_sm_set_enabled(pio, sm, true);
 
     uint8_t write_data[5] = {0x01, 0x02, 0x03, 0x04, 0x05};
-    i2c_write(0xA0, 0x00, write_data, 5);
+    i2c_write(SLAVE_ADDR, 0x00, write_data, 5);
 
     delay_ms(200);
 
     uint8_t read_data[5];
-    i2c_read(0xA0, 0x00, read_data, 5);
+    i2c_read(SLAVE_ADDR, 0x00, read_data, 5);
 
     for (uint8_t i = 0; i < 5; i++)
         printf("read[%d]=0x%x\n", i, read_data[i]);
