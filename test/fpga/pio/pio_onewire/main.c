@@ -15,6 +15,24 @@
 PIO pio = pio0;
 uint32_t sm = 0;
 
+
+static uint8_t ds18b20_crc8(uint8_t *data, uint8_t len)
+{
+    uint8_t crc = 0, i, j;
+
+    for (i = 0; i < len; i++) {
+        crc ^= data[i];
+        for (j = 0; j < 8; j++) {
+            if (crc & 0x01)
+                crc = (crc >> 1) ^ 0x8C;
+            else
+                crc >>= 1;
+        }
+    }
+
+    return crc;
+}
+
 static uint8_t onewire_init()
 {
     uint8_t ret = 0;
@@ -80,7 +98,7 @@ int main()
 
     printf("pio onewire started\n");
 
-    uint8_t data[8];
+    uint8_t data[9];
 
     while (1) {
         if (onewire_init()) {
@@ -92,7 +110,10 @@ int main()
                 onewire_write(0xBE);
                 for (uint32_t i = 0; i < 9; i++)
                     data[i] = onewire_read();
-                printf("temp = %d\n", ((int16_t)((data[1] << 8) | data[0])) / 16);
+                if (!ds18b20_crc8(data, 9))
+                    printf("temp = %d\n", ((int16_t)((data[1] << 8) | data[0])) / 16);
+                else
+                    printf("read error!!!\n");
             } else {
                 printf("init fail 2\n");
             }
