@@ -40,6 +40,7 @@ INCDIR += $(SDK_PATH)/drivers/uart/inc
 INCDIR += $(SDK_PATH)/drivers/mach_timer/inc
 INCDIR += $(SDK_PATH)/drivers/flash/inc
 INCDIR += $(SDK_PATH)/drivers/pio/inc
+INCDIR += $(SDK_PATH)/drivers/perireset/inc
 INCDIR += $(SDK_PATH)/../../example_soc/libfpga/peris/uart
 INCDIR += $(SDK_PATH)/../../example_soc/libfpga/peris/spi_qspi_xip
 INCDIR += $(SDK_PATH)/../../example_soc/libfpga/peris/pio

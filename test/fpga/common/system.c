@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include "hazard3_csr.h"
+#include "perireset_drv.h"
 
 #define MHZ(a) (a##000000)
 
@@ -25,6 +26,8 @@ uint32_t get_uart_clock_hz()
 void runtime_init()
 {
     clock_init();
+
+    peri_reset(PIO0_RESET_BIT);
 
     runtime_init_per_core_h3_irq_registers();
 }
