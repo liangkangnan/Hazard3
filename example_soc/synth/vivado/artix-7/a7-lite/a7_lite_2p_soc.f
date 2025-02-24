@@ -22,6 +22,7 @@ list ../../../../libfpga/peris/pio/pio.f
 list ../../../../libfpga/mem/ahb_cache.f
 list ../../../../libfpga/mem/ahb_sync_sram.f
 list ../../../../libfpga/peris/sysinfo/sysinfo.f
+list ../../../../libfpga/peris/peri_reset/peri_reset.f
 
 list ../../../../libfpga/busfabric/ahbl_crossbar.f
 file ../../../../libfpga/busfabric/ahbl_to_apb.v

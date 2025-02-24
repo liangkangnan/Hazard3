@@ -245,6 +245,8 @@ wire              uart_irq;
 wire              timer_irq;
 wire              pio0_irq;
 
+wire [15:0]       peri_reset_n_req;
+
 `ifdef SIMULATION
 wire [NUM_IRQS-1:0] irq;
 wire                soft_irq;
@@ -510,6 +512,15 @@ wire [31:0] sysinfo_prdata;
 wire        sysinfo_pready;
 wire        sysinfo_pslverr;
 
+wire        perireset_psel;
+wire        perireset_penable;
+wire        perireset_pwrite;
+wire [15:0] perireset_paddr;
+wire [31:0] perireset_pwdata;
+wire [31:0] perireset_prdata;
+wire        perireset_pready;
+wire        perireset_pslverr;
+
 wire        uart_psel;
 wire        uart_penable;
 wire        uart_pwrite;
@@ -574,9 +585,9 @@ ahbl_to_apb apb_bridge_u (
 );
 
 apb_splitter #(
-	.N_SLAVES   (5),
-	.ADDR_MAP   (80'h9000_8000_4000_1000_0000),
-	.ADDR_MASK  (80'hf000_f000_f000_f000_f000)
+	.N_SLAVES   (6),
+	.ADDR_MAP   (96'h9000_8000_4000_2000_1000_0000),
+	.ADDR_MASK  (96'hf000_f000_f000_f000_f000_f000)
 ) inst_apb_splitter (
 	.apbs_paddr   (bridge_paddr),
 	.apbs_psel    (bridge_psel),
@@ -587,14 +598,14 @@ apb_splitter #(
 	.apbs_prdata  (bridge_prdata),
 	.apbs_pslverr (bridge_pslverr),
 
-	.apbm_paddr   ({pio0_paddr   , xip_paddr   , uart_paddr   , sysinfo_paddr,   timer_paddr  }),
-	.apbm_psel    ({pio0_psel    , xip_psel    , uart_psel    , sysinfo_psel,    timer_psel   }),
-	.apbm_penable ({pio0_penable , xip_penable , uart_penable , sysinfo_penable, timer_penable}),
-	.apbm_pwrite  ({pio0_pwrite  , xip_pwrite  , uart_pwrite  , sysinfo_pwrite,  timer_pwrite }),
-	.apbm_pwdata  ({pio0_pwdata  , xip_pwdata  , uart_pwdata  , sysinfo_pwdata,  timer_pwdata }),
-	.apbm_pready  ({pio0_pready  , xip_pready  , uart_pready  , sysinfo_pready,  timer_pready }),
-	.apbm_prdata  ({pio0_prdata  , xip_prdata  , uart_prdata  , sysinfo_prdata,  timer_prdata }),
-	.apbm_pslverr ({pio0_pslverr , xip_pslverr , uart_pslverr , sysinfo_pslverr, timer_pslverr})
+	.apbm_paddr   ({pio0_paddr   , xip_paddr   , uart_paddr   , perireset_paddr,   sysinfo_paddr,   timer_paddr  }),
+	.apbm_psel    ({pio0_psel    , xip_psel    , uart_psel    , perireset_psel,    sysinfo_psel,    timer_psel   }),
+	.apbm_penable ({pio0_penable , xip_penable , uart_penable , perireset_penable, sysinfo_penable, timer_penable}),
+	.apbm_pwrite  ({pio0_pwrite  , xip_pwrite  , uart_pwrite  , perireset_pwrite,  sysinfo_pwrite,  timer_pwrite }),
+	.apbm_pwdata  ({pio0_pwdata  , xip_pwdata  , uart_pwdata  , perireset_pwdata,  sysinfo_pwdata,  timer_pwdata }),
+	.apbm_pready  ({pio0_pready  , xip_pready  , uart_pready  , perireset_pready,  sysinfo_pready,  timer_pready }),
+	.apbm_prdata  ({pio0_prdata  , xip_prdata  , uart_prdata  , perireset_prdata,  sysinfo_prdata,  timer_prdata }),
+	.apbm_pslverr ({pio0_pslverr , xip_pslverr , uart_pslverr , perireset_pslverr, sysinfo_pslverr, timer_pslverr})
 );
 
 // ----------------------------------------------------------------------------
@@ -718,7 +729,7 @@ ahb_cache_readonly #(
 
 spi_qspi_xip xip_u (
 	.clk               (clk),
-	.rst_n             (rst_n),
+	.rst_n             (rst_n && peri_reset_n_req[XIP_RESET_BIT]),
 
 	.apbs_psel         (xip_psel),
 	.apbs_penable      (xip_penable),
@@ -757,7 +768,7 @@ end else begin: no_icache
 
 spi_qspi_xip xip_u (
 	.clk               (clk),
-	.rst_n             (rst_n),
+	.rst_n             (rst_n && peri_reset_n_req[XIP_RESET_BIT]),
 
 	.apbs_psel         (xip_psel),
 	.apbs_penable      (xip_penable),
@@ -872,9 +883,24 @@ sysinfo_regs sysinfo_u (
 	.apbs_pslverr  (sysinfo_pslverr)
 );
 
+peri_reset reset_u (
+	.clk           (clk),
+	.rst_n         (rst_n),
+
+	.apbs_psel     (perireset_psel),
+	.apbs_penable  (perireset_penable),
+	.apbs_pwrite   (perireset_pwrite),
+	.apbs_paddr    (perireset_paddr),
+	.apbs_pwdata   (perireset_pwdata),
+	.apbs_prdata   (perireset_prdata),
+	.apbs_pready   (perireset_pready),
+	.apbs_pslverr  (perireset_pslverr),
+	.reset_n_req   (peri_reset_n_req)
+);
+
 uart_mini uart_u (
 	.clk          (clk),
-	.rst_n        (rst_n),
+	.rst_n        (rst_n && peri_reset_n_req[UART_RESET_BIT]),
 
 	.apbs_psel    (uart_psel),
 	.apbs_penable (uart_penable),
@@ -914,7 +940,7 @@ end
 
 hazard3_riscv_timer riscv_timer_u (
 	.clk       (clk),
-	.rst_n     (rst_n),
+	.rst_n     (rst_n && peri_reset_n_req[TIMER_RESET_BIT]),
 
 	.psel      (timer_psel),
 	.penable   (timer_penable),
@@ -970,7 +996,7 @@ wire pio15_out_en = pio_out_en[15];
 
 pio pio0 (
 	.clk           (clk),
-	.rst_n         (rst_n),
+	.rst_n         (rst_n && peri_reset_n_req[PIO0_RESET_BIT]),
 
 	.apbs_psel     (pio0_psel),
 	.apbs_penable  (pio0_penable),
