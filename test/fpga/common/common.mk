@@ -12,8 +12,10 @@ ifeq ($(RUN), FLASH)
 LDSCRIPT     ?= $(SDK_PATH)/common/flash_dram.ld
 else ifeq ($(RUN), DRAM)
 LDSCRIPT     ?= $(SDK_PATH)/common/dram.ld
-else
+else ifeq ($(RUN), IRAM)
 LDSCRIPT     ?= $(SDK_PATH)/common/iram_dram.ld
+else
+$(error please check the RUN parameter)
 endif
 
 CROSS_PREFIX ?= riscv32-unknown-elf-
