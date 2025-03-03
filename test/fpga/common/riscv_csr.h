@@ -1,0 +1,15 @@
+#ifndef _RISCV_CSR_H_
+#define _RISCV_CSR_H_
+
+#define RVCSR_MEICONTEXT_NOIRQ_BITS     (0x00008000)
+#define RVCSR_MEICONTEXT_OFFSET         (0x00000be5)
+#define RVCSR_MEICONTEXT_CLEARTS_BITS   (0x00000002)
+#define RVCSR_MEINEXT_OFFSET            (0x00000be4)
+#define RVCSR_MEINEXT_UPDATE_BITS       (0x00000001)
+#define RVCSR_MEIFA_OFFSET              (0x00000be2)
+#define RVCSR_MIE_MEIE_BITS             (0x00000800)
+#define RVCSR_MSTATUS_MIE_BITS          (0x00000008)
+#define RVCSR_MSPBOTTOM_OFFSET          (0x00000bea)
+#define RVCSR_MIE_MSIE_BITS             (0x00000008)
+
+#endif
