@@ -5,6 +5,13 @@
 #include "stdint.h"
 #endif
 
+#define hazard3_csr_mstatus    0x300
+#define hazard3_csr_mie        0x304
+#define hazard3_csr_mtvec      0x305 // Trap vector base address
+#define hazard3_csr_mscratch   0x340
+#define hazard3_csr_mepc       0x341
+#define hazard3_csr_mcause     0x342
+
 #define hazard3_csr_dmdata0    0xbff // Debug-mode shadow CSR for DM data transfer
 
 #define hazard3_csr_meiea      0xbe0 // External interrupt pending array

@@ -1,10 +1,8 @@
-#define RVCSR_MEICONTEXT_OFFSET         (0x00000be5)
-#define RVCSR_MEICONTEXT_CLEARTS_BITS   (0x00000002)
-#define RVCSR_MEINEXT_OFFSET            (0x00000be4)
-#define RVCSR_MEINEXT_UPDATE_BITS       (0x00000001)
-#define RVCSR_MEIFA_OFFSET              (0x00000be2)
-#define RVCSR_MIE_MEIE_BITS             (0x00000800)
-#define RVCSR_MSTATUS_MIE_BITS          (0x00000008)
+/*
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+
+#include "riscv_csr.h"
 
 // must be in RAM due to branches from vector table
 .section .time_critical.external_irq
@@ -57,9 +55,9 @@ dispatch_irq:
     csrsi mstatus, 0x8
     // <- from this point we can be preempted by a higher-priority interrupt.
     // meinext is pre-shifted by 2, so only an add is required to index table
-    lui a1, %hi(__soft_vector_table)
+    lui a1, %hi(__external_irq_vector_table)
     add a1, a1, a0
-    lw a1, %lo(__soft_vector_table)(a1)
+    lw a1, %lo(__external_irq_vector_table)(a1)
     jalr ra, a1
     // Disable IRQs on returning so we can sample the next IRQ
     csrci mstatus, 0x8
@@ -103,14 +101,14 @@ check_irq_before_exit:
     bgez a0, save_meicontext
     lw a0, 16(sp)
     addi sp, sp, 80
-    ret
+    mret
 
 // Default software vector table for system interrupts, routed through
 // mip.meip. Note this is assumed in e.g. hardware_irq to begin exactly 0x34
 // words after the hardware vector table indicated by mtvec (defined above).
 .p2align 4
-.global __soft_vector_table
-__soft_vector_table:
+.global __external_irq_vector_table
+__external_irq_vector_table:
 .word external_isr0
 .word external_isr1
 .word external_isr2

@@ -30,6 +30,7 @@ SRCS += $(SDK_PATH)/drivers/uart/src/uart_drv.c
 SRCS += $(SDK_PATH)/drivers/mach_timer/src/mach_timer_drv.c
 SRCS += $(SDK_PATH)/drivers/flash/src/flash_drv.c
 SRCS += $(SDK_PATH)/drivers/pio/src/pio_drv.c
+SRCS += $(SDK_PATH)/drivers/timer/src/timer_drv.c
 SRCS += $(SDK_PATH)/common/crt0.S $(SDK_PATH)/common/exception_table.S $(SDK_PATH)/common/external_irq_table.S $(SDK_PATH)/common/system.c $(SDK_PATH)/common/exception_handler.c
 SRCS += $(SDK_PATH)/common/syscalls.c
 SRCS += $(SDK_PATH)/common/printf.c
@@ -43,9 +44,11 @@ INCDIR += $(SDK_PATH)/drivers/mach_timer/inc
 INCDIR += $(SDK_PATH)/drivers/flash/inc
 INCDIR += $(SDK_PATH)/drivers/pio/inc
 INCDIR += $(SDK_PATH)/drivers/perireset/inc
+INCDIR += $(SDK_PATH)/drivers/timer/inc
 INCDIR += $(SDK_PATH)/../../example_soc/libfpga/peris/uart
 INCDIR += $(SDK_PATH)/../../example_soc/libfpga/peris/spi_qspi_xip
 INCDIR += $(SDK_PATH)/../../example_soc/libfpga/peris/pio
+INCDIR += $(SDK_PATH)/../../example_soc/libfpga/peris/timer
 
 ###############################################################################
 

@@ -25,8 +25,8 @@
 	__h3_bextmi_rd; \
 })
 
-#define __hazard3_block() asm ("slt x0, x0, x0" : : : "memory")
+#define __hazard3_block() asm volatile ("slt x0, x0, x0" : : : "memory")
 
-#define __hazard3_unblock() asm ("slt x0, x0, x1" : : : "memory")
+#define __hazard3_unblock() asm volatile ("slt x0, x0, x1" : : : "memory")
 
 #endif

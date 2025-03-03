@@ -12,8 +12,8 @@
 .section .time_critical.hardware_exception
 
 .p2align 2
-.global __riscv_exception_table
-__riscv_exception_table:
+.global __exception_vector_table
+__exception_vector_table:
 .word isr_riscv_machine_instr_align_exception
 .word isr_riscv_machine_instr_fault_exception
 .word isr_riscv_machine_instr_illegal_exception
@@ -66,7 +66,7 @@ isr_riscv_machine_exception:
     bltu t6, ra, __unhandled_exception
 
     // Enter exception through table
-    la t6, __riscv_exception_table
+    la t6, __exception_vector_table
     //sh2add ra, ra, t6
     slli ra, ra, 2
     add ra, ra, t6
@@ -94,7 +94,7 @@ isr_riscv_machine_exception:
 
     // Restore mscratch to 0 to avoid tripping next exception
     csrrw ra, mscratch, zero
-    ret
+    mret
 
 decl_isr isr_riscv_machine_instr_align_exception
 decl_isr isr_riscv_machine_instr_fault_exception
