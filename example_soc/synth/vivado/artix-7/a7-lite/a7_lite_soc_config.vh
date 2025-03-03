@@ -1,4 +1,4 @@
-localparam RESET_VECTOR        = 32'h0000_0040;
+localparam RESET_VECTOR        = 32'h0000_0000;
 localparam MTVEC_INIT          = 32'h0000_0000;
 localparam EXTENSION_A         = 1;
 localparam EXTENSION_C         = 1;
@@ -44,7 +44,8 @@ localparam BRANCH_PREDICTOR    = 1;
 localparam MTVEC_WMASK         = 32'hfffffffd;
 localparam ICACHE              = 1;
 
-localparam TIMER_RESET_BIT     = 0;
+localparam MACH_TIMER_RESET_BIT= 0;
 localparam UART_RESET_BIT      = 1;
 localparam XIP_RESET_BIT       = 2;
 localparam PIO0_RESET_BIT      = 3;
+localparam TIMER0_RESET_BIT    = 4;

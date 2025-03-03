@@ -244,6 +244,7 @@ wire              unblock_out;
 wire              uart_irq;
 wire              timer_irq;
 wire              pio0_irq;
+wire              timer0_irq;
 
 wire [15:0]       peri_reset_n_req;
 
@@ -322,10 +323,10 @@ hazard3_cpu_2port #(
 	.dbg_sbus_wdata             (sbus_wdata),
 	.dbg_sbus_rdata             (sbus_rdata),
 `ifdef SIMULATION
-	.irq                        ({irq[NUM_IRQS-1:2], pio0_irq | irq[1], uart_irq | irq[0]}),
+	.irq                        ({irq[NUM_IRQS-1:3], timer0_irq, pio0_irq | irq[1], uart_irq | irq[0]}),
 	.soft_irq                   (soft_irq),
 `else
-	.irq                        ({{NUM_IRQS-2{1'b0}}, pio0_irq, uart_irq}),
+	.irq                        ({{NUM_IRQS-3{1'b0}}, timer0_irq, pio0_irq, uart_irq}),
 	.soft_irq                   (1'b0),
 `endif
 	.timer_irq                  (timer_irq)
@@ -530,14 +531,23 @@ wire [31:0] uart_prdata;
 wire        uart_pready;
 wire        uart_pslverr;
 
-wire        timer_psel;
-wire        timer_penable;
-wire        timer_pwrite;
-wire [15:0] timer_paddr;
-wire [31:0] timer_pwdata;
-wire [31:0] timer_prdata;
-wire        timer_pready;
-wire        timer_pslverr;
+wire        mach_timer_psel;
+wire        mach_timer_penable;
+wire        mach_timer_pwrite;
+wire [15:0] mach_timer_paddr;
+wire [31:0] mach_timer_pwdata;
+wire [31:0] mach_timer_prdata;
+wire        mach_timer_pready;
+wire        mach_timer_pslverr;
+
+wire        timer0_psel;
+wire        timer0_penable;
+wire        timer0_pwrite;
+wire [15:0] timer0_paddr;
+wire [31:0] timer0_pwdata;
+wire [31:0] timer0_prdata;
+wire        timer0_pready;
+wire        timer0_pslverr;
 
 wire        xip_psel;
 wire        xip_penable;
@@ -585,9 +595,9 @@ ahbl_to_apb apb_bridge_u (
 );
 
 apb_splitter #(
-	.N_SLAVES   (6),
-	.ADDR_MAP   (96'h9000_8000_4000_2000_1000_0000),
-	.ADDR_MASK  (96'hf000_f000_f000_f000_f000_f000)
+	.N_SLAVES   (7),
+	.ADDR_MAP   (112'h9000_8000_4000_3000_2000_1000_0000),
+	.ADDR_MASK  (112'hf000_f000_f000_f000_f000_f000_f000)
 ) inst_apb_splitter (
 	.apbs_paddr   (bridge_paddr),
 	.apbs_psel    (bridge_psel),
@@ -598,14 +608,14 @@ apb_splitter #(
 	.apbs_prdata  (bridge_prdata),
 	.apbs_pslverr (bridge_pslverr),
 
-	.apbm_paddr   ({pio0_paddr   , xip_paddr   , uart_paddr   , perireset_paddr,   sysinfo_paddr,   timer_paddr  }),
-	.apbm_psel    ({pio0_psel    , xip_psel    , uart_psel    , perireset_psel,    sysinfo_psel,    timer_psel   }),
-	.apbm_penable ({pio0_penable , xip_penable , uart_penable , perireset_penable, sysinfo_penable, timer_penable}),
-	.apbm_pwrite  ({pio0_pwrite  , xip_pwrite  , uart_pwrite  , perireset_pwrite,  sysinfo_pwrite,  timer_pwrite }),
-	.apbm_pwdata  ({pio0_pwdata  , xip_pwdata  , uart_pwdata  , perireset_pwdata,  sysinfo_pwdata,  timer_pwdata }),
-	.apbm_pready  ({pio0_pready  , xip_pready  , uart_pready  , perireset_pready,  sysinfo_pready,  timer_pready }),
-	.apbm_prdata  ({pio0_prdata  , xip_prdata  , uart_prdata  , perireset_prdata,  sysinfo_prdata,  timer_prdata }),
-	.apbm_pslverr ({pio0_pslverr , xip_pslverr , uart_pslverr , perireset_pslverr, sysinfo_pslverr, timer_pslverr})
+	.apbm_paddr   ({pio0_paddr   , xip_paddr   , uart_paddr   , timer0_paddr   , perireset_paddr   , sysinfo_paddr   , mach_timer_paddr  }),
+	.apbm_psel    ({pio0_psel    , xip_psel    , uart_psel    , timer0_psel    , perireset_psel    , sysinfo_psel    , mach_timer_psel   }),
+	.apbm_penable ({pio0_penable , xip_penable , uart_penable , timer0_penable , perireset_penable , sysinfo_penable , mach_timer_penable}),
+	.apbm_pwrite  ({pio0_pwrite  , xip_pwrite  , uart_pwrite  , timer0_pwrite  , perireset_pwrite  , sysinfo_pwrite  , mach_timer_pwrite }),
+	.apbm_pwdata  ({pio0_pwdata  , xip_pwdata  , uart_pwdata  , timer0_pwdata  , perireset_pwdata  , sysinfo_pwdata  , mach_timer_pwdata }),
+	.apbm_pready  ({pio0_pready  , xip_pready  , uart_pready  , timer0_pready  , perireset_pready  , sysinfo_pready  , mach_timer_pready }),
+	.apbm_prdata  ({pio0_prdata  , xip_prdata  , uart_prdata  , timer0_prdata  , perireset_prdata  , sysinfo_prdata  , mach_timer_prdata }),
+	.apbm_pslverr ({pio0_pslverr , xip_pslverr , uart_pslverr , timer0_pslverr , perireset_pslverr , sysinfo_pslverr , mach_timer_pslverr})
 );
 
 // ----------------------------------------------------------------------------
@@ -919,6 +929,21 @@ uart_mini uart_u (
 	.dreq         (/* unused */)
 );
 
+timer timer0 (
+	.clk          (clk),
+	.rst_n        (rst_n && peri_reset_n_req[TIMER0_RESET_BIT]),
+
+	.apbs_psel    (timer0_psel),
+	.apbs_penable (timer0_penable),
+	.apbs_pwrite  (timer0_pwrite),
+	.apbs_paddr   (timer0_paddr),
+	.apbs_pwdata  (timer0_pwdata),
+	.apbs_prdata  (timer0_prdata),
+	.apbs_pready  (timer0_pready),
+	.apbs_pslverr (timer0_pslverr),
+	.irq          (timer0_irq)
+);
+
 // Microsecond timebase for timer
 
 reg [$clog2(CLK_MHZ)-1:0] timer_tick_ctr;
@@ -940,16 +965,16 @@ end
 
 hazard3_riscv_timer riscv_timer_u (
 	.clk       (clk),
-	.rst_n     (rst_n && peri_reset_n_req[TIMER_RESET_BIT]),
+	.rst_n     (rst_n && peri_reset_n_req[MACH_TIMER_RESET_BIT]),
 
-	.psel      (timer_psel),
-	.penable   (timer_penable),
-	.pwrite    (timer_pwrite),
-	.paddr     (timer_paddr),
-	.pwdata    (timer_pwdata),
-	.prdata    (timer_prdata),
-	.pready    (timer_pready),
-	.pslverr   (timer_pslverr),
+	.psel      (mach_timer_psel),
+	.penable   (mach_timer_penable),
+	.pwrite    (mach_timer_pwrite),
+	.paddr     (mach_timer_paddr),
+	.pwdata    (mach_timer_pwdata),
+	.prdata    (mach_timer_prdata),
+	.pready    (mach_timer_pready),
+	.pslverr   (mach_timer_pslverr),
 
 	.dbg_halt  (hart_halted),
 
