@@ -16,3 +16,6 @@
 [submodule "test/sim/embench/embench-iot"]
 	path = test/sim/embench/embench-iot
 	url = https://github.com/Wren6991/embench-iot.git
+[submodule "test/fpga/freertos-kernel"]
+	path = test/fpga/freertos-kernel
+	url = https://github.com/liangkangnan/FreeRTOS-Kernel-Hazard3.git
