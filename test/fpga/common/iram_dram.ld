@@ -23,7 +23,7 @@
 
 ENTRY(_entry_point)
 
-__stack_size = 2048;
+__stack_size = 8192;
 
 PROVIDE(_stack_size = __stack_size);
 
