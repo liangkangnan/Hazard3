@@ -26,42 +26,67 @@
 #define hazard3_csr_msleep     0xbf0 // M-mode sleep control register
 
 #define _read_csr(csrname) ({ \
-  uint32_t __csr_tmp_u32; \
-  asm volatile ("csrr %0, " #csrname : "=r" (__csr_tmp_u32)); \
-  __csr_tmp_u32; \
+    uint32_t __csr_tmp_u32; \
+    asm volatile ("csrr %0, " #csrname : "=r" (__csr_tmp_u32)); \
+    __csr_tmp_u32; \
 })
 
 #define _write_csr(csrname, data) ({ \
-	asm volatile ("csrw " #csrname ", %0" : : "r" (data)); \
+    if (__builtin_constant_p(data) && !((data) & -32u)) { \
+        asm volatile ("csrwi " #csrname ", %0" : : "i" (data)); \
+    } else { \
+        asm volatile ("csrw " #csrname ", %0" : : "r" (data)); \
+    } \
 })
 
 #define _set_csr(csrname, data) ({ \
-  asm volatile ("csrs " #csrname ", %0" : : "r" (data)); \
+    if (__builtin_constant_p(data) && !((data) & -32u)) { \
+        asm volatile ("csrsi " #csrname ", %0" : : "i" (data)); \
+    } else { \
+        asm volatile ("csrs " #csrname ", %0" : : "r" (data)); \
+    } \
 })
 
 #define _clear_csr(csrname, data) ({ \
-  asm volatile ("csrc " #csrname ", %0" : : "r" (data)); \
+    if (__builtin_constant_p(data) && !((data) & -32u)) { \
+        asm volatile ("csrci " #csrname ", %0" : : "i" (data)); \
+    } else { \
+        asm volatile ("csrc " #csrname ", %0" : : "r" (data)); \
+    } \
 })
 
 #define _read_write_csr(csrname, data) ({ \
-  uint32_t __csr_tmp_u32; \
-  asm volatile ("csrrw %0, " #csrname ", %1" : "=r" (__csr_tmp_u32) : "r" (data)); \
-  __csr_tmp_u32; \
+    uint32_t __csr_tmp_u32; \
+    if (__builtin_constant_p(data) && !((data) & -32u)) { \
+        asm volatile ("csrrwi %0, " #csrname ", %1": "=r" (__csr_tmp_u32) : "i" (data)); \
+    } else { \
+        asm volatile ("csrrw %0, " #csrname ", %1": "=r" (__csr_tmp_u32) : "r" (data)); \
+    } \
+    __csr_tmp_u32; \
 })
 
 #define _read_set_csr(csrname, data) ({ \
-  uint32_t __csr_tmp_u32; \
-  asm volatile ("csrrs %0, " #csrname ", %1" : "=r" (__csr_tmp_u32) : "r" (data)); \
-  __csr_tmp_u32; \
+    uint32_t __csr_tmp_u32; \
+    if (__builtin_constant_p(data) && !((data) & -32u)) { \
+        asm volatile ("csrrsi %0, " #csrname ", %1": "=r" (__csr_tmp_u32) : "i" (data)); \
+    } else { \
+        asm volatile ("csrrs %0, " #csrname ", %1": "=r" (__csr_tmp_u32) : "r" (data)); \
+    } \
+    __csr_tmp_u32; \
 })
 
 #define _read_clear_csr(csrname, data) ({ \
-  uint32_t __csr_tmp_u32; \
-  asm volatile ("csrrc %0, " #csrname ", %1" : "=r" (__csr_tmp_u32) : "r" (data)); \
-  __csr_tmp_u32; \
+    uint32_t __csr_tmp_u32; \
+    if (__builtin_constant_p(data) && !((data) & -32u)) { \
+        asm volatile ("csrrci %0, " #csrname ", %1": "=r" (__csr_tmp_u32) : "i" (data)); \
+    } else { \
+        asm volatile ("csrrc %0, " #csrname ", %1": "=r" (__csr_tmp_u32) : "r" (data)); \
+    } \
+    __csr_tmp_u32; \
 })
 
-// Argument macro expansion layer
+// Argument macro expansion layer (CSR name may be a macro that expands to a
+// CSR number, or it may be a bare name that the assembler knows about.)
 #define read_csr(csrname)             _read_csr(csrname)
 #define write_csr(csrname, data)      _write_csr(csrname, data)
 #define set_csr(csrname, data)        _set_csr(csrname, data)
