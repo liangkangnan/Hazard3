@@ -1,13 +1,66 @@
 #include "pio_drv.h"
 #include "pio_instructions.h"
 
+
+static uint8_t _sm_claimed[NUM_PIOS][NUM_PIO_STATE_MACHINES];
+static uint32_t _used_instruction_space[NUM_PIOS];
+
+static int find_offset_for_program(PIO pio, const pio_program_t *program)
+{
+    uint32_t used_mask = _used_instruction_space[pio_get_index(pio)];
+    uint32_t program_mask = (1u << program->length) - 1;
+
+    // work down from the top
+    for (int i = PIO_INSTRUCTION_COUNT - program->length; i >= 0; i--) {
+        if (!(used_mask & (program_mask << (uint32_t) i))) {
+            return i;
+        }
+    }
+
+    return -1;
+}
+
 int pio_add_program_at_offset(PIO pio, const pio_program_t *program, uint32_t offset)
 {
     for (uint32_t i = 0; i < program->length; ++i) {
         pio->instr_mem[offset + i] = program->instructions[i];
     }
 
+    uint32_t program_mask = (1u << program->length) - 1;
+    _used_instruction_space[pio_get_index(pio)] |= program_mask << offset;
+
     return (int)offset;
+}
+
+int pio_add_program(PIO *pio, uint32_t *sm, const pio_program_t *program)
+{
+    uint8_t i, j;
+    int ret;
+
+    for (i = 0; i < NUM_PIOS; i++) {
+        for (j = 0; j < NUM_PIO_STATE_MACHINES; j++) {
+            if (_sm_claimed[i][j] == 0) {
+                ret = find_offset_for_program(pio_get_instance(i), program);
+                if (ret > 0) {
+                    *pio = pio_get_instance(i);
+                    *sm = j;
+                    pio_add_program_at_offset(pio_get_instance(i), program, ret);
+                    _sm_claimed[i][j] = 1;
+                    return ret;
+                }
+            }
+        }
+    }
+
+    return -1;
+}
+
+void pio_remove_program(PIO pio, uint32_t sm, const pio_program_t *program, uint32_t loaded_offset)
+{
+    uint32_t program_mask = (1u << program->length) - 1;
+    program_mask <<= loaded_offset;
+    _used_instruction_space[pio_get_index(pio)] &= ~program_mask;
+    _sm_claimed[pio_get_index(pio)][sm] = 0;
 }
 
 int pio_sm_init(PIO pio, uint32_t sm, uint32_t initial_pc, const pio_sm_config *config)

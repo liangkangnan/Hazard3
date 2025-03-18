@@ -8,6 +8,10 @@
 
 #define PIO0_BASE_ADDR  (0x40009000)
 
+#define PIO_INSTRUCTION_COUNT   32
+#define NUM_PIOS                1
+#define NUM_PIO_STATE_MACHINES  4
+
 typedef struct {
     volatile uint32_t clkdiv;
     volatile uint32_t pinctrl;
@@ -43,6 +47,13 @@ typedef struct pio_program {
     const uint16_t *instructions;
     uint8_t length;
 } pio_program_t;
+
+typedef struct pio_info {
+    int offset;
+    PIO pio;
+    uint32_t sm;
+    pio_program_t *program;
+} pio_info_t;
 
 /** \brief PIO Configuration structure
  *  \ingroup sm_config
@@ -482,7 +493,9 @@ static inline void pio_sm_set_clkdiv(PIO pio, uint32_t sm, uint32_t div) {
  * \return the instruction memory offset the program is loaded at, or negative for error (for
  * backwards compatibility with prior SDK the error value is -1 i.e. PICO_ERROR_GENERIC)
  */
-int pio_add_program(PIO pio, const pio_program_t *program);
+int pio_add_program(PIO *pio, uint32_t *sm, const pio_program_t *program);
+
+void pio_remove_program(PIO pio, uint32_t sm, const pio_program_t *program, uint32_t loaded_offset);
 
 /*! \brief Attempt to load the program at the specified instruction memory offset
  *  \ingroup hardware_pio
@@ -641,6 +654,32 @@ static inline bool pio_sm_is_exec_stalled(PIO pio, uint32_t sm) {
 static inline void pio_sm_exec_wait_blocking(PIO pio, uint32_t sm, uint32_t instr) {
     pio_sm_exec(pio, sm, instr);
     while (pio_sm_is_exec_stalled(pio, sm));
+}
+
+/*! \brief Return the instance number of a PIO instance
+ *  \ingroup hardware_pio
+ *
+ * \param pio The PIO instance; e.g. \ref pio0 or \ref pio1
+ * \return the PIO instance number (0, 1, ...)
+ */
+static inline uint32_t pio_get_index(PIO pio) {
+    if ((uintptr_t)(pio) == PIO0_BASE_ADDR)
+        return 0;
+
+    return 0;
+}
+
+/*! \brief Convert PIO instance to hardware instance
+ *  \ingroup hardware_pio
+ *
+ * \param instance Instance of PIO, 0 or 1
+ * \return the PIO hardware instance
+ */
+static inline PIO pio_get_instance(uint32_t instance) {
+    if (instance == 0)
+        return pio0;
+
+    return pio0;
 }
 
 static inline void pio_gpio_data_put(PIO pio, uint32_t data) {
