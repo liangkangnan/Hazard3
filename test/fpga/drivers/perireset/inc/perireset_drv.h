@@ -3,10 +3,11 @@
 
 #define PERIRESET_BASE_ADDR  (0x40002000)
 
-#define TIMER_RESET_BIT      0x1
+#define MACH_TIMER_RESET_BIT 0x1
 #define UART_RESET_BIT       0x2
 #define XIP_RESET_BIT        0x4
-#define PIO0_RESET_BIT       0x8
+#define PIO_RESET_BIT        0x8
+#define TIMER0_RESET_BIT     0x10
 
 typedef struct {
     volatile uint32_t ctrl;

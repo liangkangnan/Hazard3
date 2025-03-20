@@ -7,9 +7,10 @@
 #include "pio_regs.h"
 
 #define PIO0_BASE_ADDR  (0x40009000)
+#define PIO1_BASE_ADDR  (0x4000A000)
 
 #define PIO_INSTRUCTION_COUNT   32
-#define NUM_PIOS                1
+#define NUM_PIOS                2
 #define NUM_PIO_STATE_MACHINES  4
 
 typedef struct {
@@ -37,11 +38,12 @@ typedef struct {
 } pio_hw_t;
 
 #define pio0_hw ((pio_hw_t *)PIO0_BASE_ADDR)
-//#define pio1_hw ((pio_hw_t *)PIO1_BASE_ADDR)
+#define pio1_hw ((pio_hw_t *)PIO1_BASE_ADDR)
 
 typedef pio_hw_t *PIO;
 
 #define pio0 pio0_hw
+#define pio1 pio1_hw
 
 typedef struct pio_program {
     const uint16_t *instructions;
@@ -665,6 +667,8 @@ static inline void pio_sm_exec_wait_blocking(PIO pio, uint32_t sm, uint32_t inst
 static inline uint32_t pio_get_index(PIO pio) {
     if ((uintptr_t)(pio) == PIO0_BASE_ADDR)
         return 0;
+    else if ((uintptr_t)(pio) == PIO1_BASE_ADDR)
+        return 1;
 
     return 0;
 }
@@ -678,6 +682,8 @@ static inline uint32_t pio_get_index(PIO pio) {
 static inline PIO pio_get_instance(uint32_t instance) {
     if (instance == 0)
         return pio0;
+    else if (instance == 1)
+        return pio1;
 
     return pio0;
 }

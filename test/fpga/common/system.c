@@ -27,7 +27,7 @@ void runtime_init()
 {
     clock_init();
 
-    peri_reset(PIO0_RESET_BIT);
+    peri_reset(PIO_RESET_BIT);
 
     runtime_init_per_core_h3_irq_registers();
 }
