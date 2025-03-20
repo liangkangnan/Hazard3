@@ -3,7 +3,6 @@
 #include "hazard3_irq.h"
 #include "uart_drv.h"
 
-#define UART_IRQ_NUM         0
 #define UART_IRQ_PRIORITY    3
 
 void uart_irq_handler();
