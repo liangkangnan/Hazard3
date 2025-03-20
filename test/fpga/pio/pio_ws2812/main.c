@@ -6,6 +6,7 @@
 #include "pio_instructions.h"
 #include "printf.h"
 #include "ws2812.h"
+#include "delay.h"
 
 
 #define RGB(R, G, B) (((B) << 16) | ((R) << 8) | (G))
@@ -13,6 +14,12 @@
 #define COLOR_RED       RGB(255, 0  , 0)
 #define COLOR_GREEN     RGB(0  , 255, 0)
 #define COLOR_BLUE      RGB(0  , 0  , 255)
+
+#define COLOR_RED_LESS       RGB(63, 0 , 0)
+#define COLOR_GREEN_LESS     RGB(0 , 63, 0)
+#define COLOR_BLUE_LESS      RGB(0 , 0 , 63)
+
+#define COLOR_OFF            RGB(0, 0, 0)
 
 #define LED_NUM     3
 
@@ -74,9 +81,18 @@ int main()
     pio_sm_set_enabled(pio, sm, true);
 
     uint32_t color[3] = {COLOR_RED, COLOR_GREEN, COLOR_BLUE};
-    ws2812_set_color(color);
+    uint32_t color_less[3] = {COLOR_RED_LESS, COLOR_GREEN_LESS, COLOR_BLUE_LESS};
+    uint32_t color_off[3] = {COLOR_OFF, COLOR_OFF, COLOR_OFF};
+    int32_t i = 20;
 
-    while (1) {
-
+    while (i--) {
+        ws2812_set_color(color);
+        delay_ms(3000);
+        ws2812_set_color(color_less);
+        delay_ms(3000);
     }
+
+    ws2812_set_color(color_off);
+
+    while (1);
 }
