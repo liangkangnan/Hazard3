@@ -244,6 +244,7 @@ wire              unblock_out;
 wire              uart_irq;
 wire              timer_irq;
 wire              pio0_irq;
+wire              pio1_irq;
 wire              timer0_irq;
 
 wire [15:0]       peri_reset_n_req;
@@ -323,10 +324,10 @@ hazard3_cpu_2port #(
 	.dbg_sbus_wdata             (sbus_wdata),
 	.dbg_sbus_rdata             (sbus_rdata),
 `ifdef SIMULATION
-	.irq                        ({irq[NUM_IRQS-1:3], timer0_irq, pio0_irq | irq[1], uart_irq | irq[0]}),
+	.irq                        ({irq[NUM_IRQS-1:4], timer0_irq | irq[3], pio1_irq | irq[2], pio0_irq | irq[1], uart_irq | irq[0]}),
 	.soft_irq                   (soft_irq),
 `else
-	.irq                        ({{NUM_IRQS-3{1'b0}}, timer0_irq, pio0_irq, uart_irq}),
+	.irq                        ({{NUM_IRQS-4{1'b0}}, timer0_irq, pio1_irq, pio0_irq, uart_irq}),
 	.soft_irq                   (1'b0),
 `endif
 	.timer_irq                  (timer_irq)
@@ -567,6 +568,15 @@ wire [31:0] pio0_prdata;
 wire        pio0_pready;
 wire        pio0_pslverr;
 
+wire        pio1_psel;
+wire        pio1_penable;
+wire        pio1_pwrite;
+wire [15:0] pio1_paddr;
+wire [31:0] pio1_pwdata;
+wire [31:0] pio1_prdata;
+wire        pio1_pready;
+wire        pio1_pslverr;
+
 ahbl_to_apb apb_bridge_u (
 	.clk               (clk),
 	.rst_n             (rst_n),
@@ -595,9 +605,9 @@ ahbl_to_apb apb_bridge_u (
 );
 
 apb_splitter #(
-	.N_SLAVES   (7),
-	.ADDR_MAP   (112'h9000_8000_4000_3000_2000_1000_0000),
-	.ADDR_MASK  (112'hf000_f000_f000_f000_f000_f000_f000)
+	.N_SLAVES   (8),
+	.ADDR_MAP   (128'ha000_9000_8000_4000_3000_2000_1000_0000),
+	.ADDR_MASK  (128'hf000_f000_f000_f000_f000_f000_f000_f000)
 ) inst_apb_splitter (
 	.apbs_paddr   (bridge_paddr),
 	.apbs_psel    (bridge_psel),
@@ -608,14 +618,14 @@ apb_splitter #(
 	.apbs_prdata  (bridge_prdata),
 	.apbs_pslverr (bridge_pslverr),
 
-	.apbm_paddr   ({pio0_paddr   , xip_paddr   , uart_paddr   , timer0_paddr   , perireset_paddr   , sysinfo_paddr   , mach_timer_paddr  }),
-	.apbm_psel    ({pio0_psel    , xip_psel    , uart_psel    , timer0_psel    , perireset_psel    , sysinfo_psel    , mach_timer_psel   }),
-	.apbm_penable ({pio0_penable , xip_penable , uart_penable , timer0_penable , perireset_penable , sysinfo_penable , mach_timer_penable}),
-	.apbm_pwrite  ({pio0_pwrite  , xip_pwrite  , uart_pwrite  , timer0_pwrite  , perireset_pwrite  , sysinfo_pwrite  , mach_timer_pwrite }),
-	.apbm_pwdata  ({pio0_pwdata  , xip_pwdata  , uart_pwdata  , timer0_pwdata  , perireset_pwdata  , sysinfo_pwdata  , mach_timer_pwdata }),
-	.apbm_pready  ({pio0_pready  , xip_pready  , uart_pready  , timer0_pready  , perireset_pready  , sysinfo_pready  , mach_timer_pready }),
-	.apbm_prdata  ({pio0_prdata  , xip_prdata  , uart_prdata  , timer0_prdata  , perireset_prdata  , sysinfo_prdata  , mach_timer_prdata }),
-	.apbm_pslverr ({pio0_pslverr , xip_pslverr , uart_pslverr , timer0_pslverr , perireset_pslverr , sysinfo_pslverr , mach_timer_pslverr})
+	.apbm_paddr   ({pio1_paddr   , pio0_paddr   , xip_paddr   , uart_paddr   , timer0_paddr   , perireset_paddr   , sysinfo_paddr   , mach_timer_paddr  }),
+	.apbm_psel    ({pio1_psel    , pio0_psel    , xip_psel    , uart_psel    , timer0_psel    , perireset_psel    , sysinfo_psel    , mach_timer_psel   }),
+	.apbm_penable ({pio1_penable , pio0_penable , xip_penable , uart_penable , timer0_penable , perireset_penable , sysinfo_penable , mach_timer_penable}),
+	.apbm_pwrite  ({pio1_pwrite  , pio0_pwrite  , xip_pwrite  , uart_pwrite  , timer0_pwrite  , perireset_pwrite  , sysinfo_pwrite  , mach_timer_pwrite }),
+	.apbm_pwdata  ({pio1_pwdata  , pio0_pwdata  , xip_pwdata  , uart_pwdata  , timer0_pwdata  , perireset_pwdata  , sysinfo_pwdata  , mach_timer_pwdata }),
+	.apbm_pready  ({pio1_pready  , pio0_pready  , xip_pready  , uart_pready  , timer0_pready  , perireset_pready  , sysinfo_pready  , mach_timer_pready }),
+	.apbm_prdata  ({pio1_prdata  , pio0_prdata  , xip_prdata  , uart_prdata  , timer0_prdata  , perireset_prdata  , sysinfo_prdata  , mach_timer_prdata }),
+	.apbm_pslverr ({pio1_pslverr , pio0_pslverr , xip_pslverr , uart_pslverr , timer0_pslverr , perireset_pslverr , sysinfo_pslverr , mach_timer_pslverr})
 );
 
 // ----------------------------------------------------------------------------
@@ -1019,23 +1029,25 @@ wire pio15_out    = pio_out[15];
 wire pio15_out_en = pio_out_en[15];
 `endif
 
-pio pio0 (
+pio_multi #(
+	.NUM_PIO(2)
+) pio (
 	.clk           (clk),
-	.rst_n         (rst_n && peri_reset_n_req[PIO0_RESET_BIT]),
+	.rst_n         (rst_n && peri_reset_n_req[PIO_RESET_BIT]),
 
-	.apbs_psel     (pio0_psel),
-	.apbs_penable  (pio0_penable),
-	.apbs_pwrite   (pio0_pwrite),
-	.apbs_paddr    (pio0_paddr),
-	.apbs_pwdata   (pio0_pwdata),
-	.apbs_prdata   (pio0_prdata),
-	.apbs_pready   (pio0_pready),
-	.apbs_pslverr  (pio0_pslverr),
+	.apbs_psel     ({pio1_psel   , pio0_psel}),
+	.apbs_penable  ({pio1_penable, pio0_penable}),
+	.apbs_pwrite   ({pio1_pwrite , pio0_pwrite}),
+	.apbs_paddr    ({pio1_paddr  , pio0_paddr}),
+	.apbs_pwdata   ({pio1_pwdata , pio0_pwdata}),
+	.apbs_prdata   ({pio1_prdata , pio0_prdata}),
+	.apbs_pready   ({pio1_pready , pio0_pready}),
+	.apbs_pslverr  ({pio1_pslverr, pio0_pslverr}),
 
 	.gpio_in       (pio_in),
 	.gpio_out      (pio_out),
 	.gpio_dir      (pio_out_en),
-	.irq           (pio0_irq)
+	.irq           ({pio1_irq, pio0_irq})
 );
 
 endmodule

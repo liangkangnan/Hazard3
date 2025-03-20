@@ -47,5 +47,5 @@ localparam ICACHE              = 1;
 localparam MACH_TIMER_RESET_BIT= 0;
 localparam UART_RESET_BIT      = 1;
 localparam XIP_RESET_BIT       = 2;
-localparam PIO0_RESET_BIT      = 3;
+localparam PIO_RESET_BIT       = 3;
 localparam TIMER0_RESET_BIT    = 4;
