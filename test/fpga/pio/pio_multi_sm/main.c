@@ -5,10 +5,16 @@
 #include "printf.h"
 #include "multi_sm.h"
 
+#define LED0_PIN 8
+#define LED1_PIN 9
+#define LED2_PIN 10
+#define LED3_PIN 11
 
-PIO pio = pio0;
-uint32_t sm0 = 0;
-uint32_t sm1 = 1;
+#define SM_NUM  4
+
+PIO pio[SM_NUM];
+uint32_t sm[SM_NUM];
+int offset[SM_NUM];
 
 int main()
 {
@@ -16,27 +22,24 @@ int main()
 
     printf("hello pio multi sm!!!\n");
 
-    pio_sm_config config0 = {0};
-    pio_sm_config_set_set_pins(&config0, 8, 1);
-    pio_sm_config_set_wrap(&config0, multi_sm_wrap_bottom, multi_sm_wrap_top);
-    pio_sm_config_set_clkdiv(&config0, 12000000, 0);
-    pio_add_program_at_offset(pio, &multi_sm_program, 0);
+    uint32_t len_pin[SM_NUM] = {LED0_PIN, LED1_PIN, LED2_PIN, LED3_PIN};
 
-    pio_sm_set_consecutive_pindirs(pio, sm0, 8, 1, true);
+    for (int i = 0; i < SM_NUM; i++) {
+        offset[i] = pio_add_program(&pio[i], &sm[i], &multi_sm_program);
+        if (offset[i] < 0) {
+            printf("Not enough space for sm%d!\n", i);
+            return -1;
+        }
+        printf("pio=%d, sm=%d, offset=%d\n", pio_get_index(pio[i]), sm[i], offset[i]);
 
-    pio_sm_init(pio, sm0, 0, &config0);
-    pio_sm_set_enabled(pio, sm0, true);
-
-    pio_sm_config config1 = {0};
-    pio_sm_config_set_set_pins(&config1, 9, 1);
-    pio_sm_config_set_wrap(&config1, multi_sm_wrap_bottom + 2, multi_sm_wrap_top + 2);
-    pio_sm_config_set_clkdiv(&config1, 6000000, 0);
-    pio_add_program_at_offset(pio, &multi_sm_program, 2);
-
-    pio_sm_set_consecutive_pindirs(pio, sm1, 9, 1, true);
-
-    pio_sm_init(pio, sm1, 2, &config1);
-    pio_sm_set_enabled(pio, sm1, true);
+        pio_sm_config config = {0};
+        pio_sm_config_set_set_pins(&config, len_pin[i], 1);
+        pio_sm_config_set_wrap(&config, offset[i] + multi_sm_wrap_bottom, offset[i] + multi_sm_wrap_top);
+        pio_sm_config_set_clkdiv(&config, 12000000 / (i + 1), 0);
+        pio_sm_set_consecutive_pindirs(pio[i], sm[i], len_pin[i], 1, true);
+        pio_sm_init(pio[i], sm[i], offset[i], &config);
+        pio_sm_set_enabled(pio[i], sm[i], true);
+    }
 
     printf("pio multi sm started\n");
 
