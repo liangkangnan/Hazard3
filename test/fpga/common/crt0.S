@@ -62,10 +62,12 @@ _reset_handler:
     la gp, __global_pointer$
 .option pop
     la sp, _stack_top
+#ifndef RUNNING_RTOS
     // Enable stack overflow detect
     la a0, _stack_bottom
     addi a0, a0, 1
     csrw RVCSR_MSPBOTTOM_OFFSET, a0
+#endif
     // Leave interrupts globally disabled for now, we will set that up later
     // in runtime_init_per_core_h3_irq_registers. Still worth installing the vector table:
     la a0, __vectors + 1
@@ -102,7 +104,11 @@ platform_entry: // symbol for stack traces
     // call runtime_init_per_core_h3_irq_registers (now called in runtime_init)
     call xip_qspi_init
     call runtime_init
+#ifdef RTOS_RTTHREAD
+    call entry
+#else
     call main
+#endif
     ebreak
 1:
     j 1b
