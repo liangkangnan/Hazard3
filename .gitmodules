@@ -19,3 +19,6 @@
 [submodule "test/fpga/freertos-kernel"]
 	path = test/fpga/freertos-kernel
 	url = https://github.com/liangkangnan/FreeRTOS-Kernel-Hazard3.git
+[submodule "test/fpga/rtthread-nano"]
+	path = test/fpga/rtthread-nano
+	url = https://github.com/liangkangnan/rtthread-nano.git
