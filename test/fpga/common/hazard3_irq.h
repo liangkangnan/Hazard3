@@ -34,7 +34,9 @@ enum external_irq_num {
     UART_IRQ_NUM        = 0,
     PIO0_IRQ_NUM        = 1,
     PIO1_IRQ_NUM        = 2,
-    TIMER0_IRQ_NUM      = 3
+    TIMER0_IRQ_NUM      = 3,
+    DMA0_IRQ_NUM        = 4,
+    DMA1_IRQ_NUM        = 5
 };
 
 // Should match processor configuration in testbench:
