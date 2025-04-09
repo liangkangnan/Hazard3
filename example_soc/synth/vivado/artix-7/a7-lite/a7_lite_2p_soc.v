@@ -238,6 +238,37 @@ wire              d_hexokay;
 wire [W_DATA-1:0] d_hwdata;
 wire [W_DATA-1:0] d_hrdata;
 
+// DMA port
+wire [W_ADDR-1:0] dma0_haddr;
+wire              dma0_hwrite;
+wire [1:0]        dma0_htrans;
+wire              dma0_hexcl;
+wire [2:0]        dma0_hsize;
+wire [2:0]        dma0_hburst;
+wire [3:0]        dma0_hprot;
+wire              dma0_hmastlock;
+wire [7:0]        dma0_hmaster;
+wire              dma0_hready;
+wire              dma0_hresp;
+wire              dma0_hexokay;
+wire [W_DATA-1:0] dma0_hwdata;
+wire [W_DATA-1:0] dma0_hrdata;
+
+wire [W_ADDR-1:0] dma1_haddr;
+wire              dma1_hwrite;
+wire [1:0]        dma1_htrans;
+wire              dma1_hexcl;
+wire [2:0]        dma1_hsize;
+wire [2:0]        dma1_hburst;
+wire [3:0]        dma1_hprot;
+wire              dma1_hmastlock;
+wire [7:0]        dma1_hmaster;
+wire              dma1_hready;
+wire              dma1_hresp;
+wire              dma1_hexokay;
+wire [W_DATA-1:0] dma1_hwdata;
+wire [W_DATA-1:0] dma1_hrdata;
+
 wire              pwrup_req;
 wire              unblock_out;
 
@@ -246,6 +277,8 @@ wire              timer_irq;
 wire              pio0_irq;
 wire              pio1_irq;
 wire              timer0_irq;
+wire              dma0_irq;
+wire              dma1_irq;
 
 wire [15:0]       peri_reset_n_req;
 
@@ -324,10 +357,10 @@ hazard3_cpu_2port #(
 	.dbg_sbus_wdata             (sbus_wdata),
 	.dbg_sbus_rdata             (sbus_rdata),
 `ifdef SIMULATION
-	.irq                        ({irq[NUM_IRQS-1:4], timer0_irq | irq[3], pio1_irq | irq[2], pio0_irq | irq[1], uart_irq | irq[0]}),
+	.irq                        ({irq[NUM_IRQS-1:6], dma1_irq | irq[5], dma0_irq | irq[4], timer0_irq | irq[3], pio1_irq | irq[2], pio0_irq | irq[1], uart_irq | irq[0]}),
 	.soft_irq                   (soft_irq),
 `else
-	.irq                        ({{NUM_IRQS-4{1'b0}}, timer0_irq, pio1_irq, pio0_irq, uart_irq}),
+	.irq                        ({{NUM_IRQS-6{1'b0}}, dma1_irq, dma0_irq, timer0_irq, pio1_irq, pio0_irq, uart_irq}),
 	.soft_irq                   (1'b0),
 `endif
 	.timer_irq                  (timer_irq)
@@ -417,7 +450,7 @@ wire [W_DATA-1:0]  iram_hwdata;
 wire [W_DATA-1:0]  iram_hrdata;
 
 ahbl_crossbar #(
-    .N_MASTERS  (2),
+    .N_MASTERS  (4),
     .N_SLAVES   (5),
     .W_ADDR     (W_ADDR),
     .W_DATA     (W_DATA),
@@ -427,17 +460,17 @@ ahbl_crossbar #(
 	.clk             (clk),
 	.rst_n           (rst_n),
 
-    .src_hready_resp ({i_hready     , d_hready}),
-    .src_hresp       ({i_hresp      , d_hresp}),
-    .src_haddr       ({i_haddr      , d_haddr}),
-    .src_hwrite      ({i_hwrite     , d_hwrite}),
-    .src_htrans      ({i_htrans     , d_htrans}),
-    .src_hsize       ({i_hsize      , d_hsize}),
-    .src_hburst      ({i_hburst     , d_hburst}),
-    .src_hprot       ({i_hprot      , d_hprot}),
-    .src_hmastlock   ({i_hmastlock  , d_hmastlock}),
-    .src_hwdata      ({i_hwdata     , d_hwdata}),
-    .src_hrdata      ({i_hrdata     , d_hrdata}),
+    .src_hready_resp ({i_hready     , dma1_hready     , dma0_hready     , d_hready}),
+    .src_hresp       ({i_hresp      , dma1_hresp      , dma0_hresp      , d_hresp}),
+    .src_haddr       ({i_haddr      , dma1_haddr      , dma0_haddr      , d_haddr}),
+    .src_hwrite      ({i_hwrite     , dma1_hwrite     , dma0_hwrite     , d_hwrite}),
+    .src_htrans      ({i_htrans     , dma1_htrans     , dma0_htrans     , d_htrans}),
+    .src_hsize       ({i_hsize      , dma1_hsize      , dma0_hsize      , d_hsize}),
+    .src_hburst      ({i_hburst     , dma1_hburst     , dma0_hburst     , d_hburst}),
+    .src_hprot       ({i_hprot      , dma1_hprot      , dma0_hprot      , d_hprot}),
+    .src_hmastlock   ({i_hmastlock  , dma1_hmastlock  , dma0_hmastlock  , d_hmastlock}),
+    .src_hwdata      ({i_hwdata     , dma1_hwdata     , dma0_hwdata     , d_hwdata}),
+    .src_hrdata      ({i_hrdata     , dma1_hrdata     , dma0_hrdata     , d_hrdata}),
 
     .dst_hready_resp ({sim_ctrl_hready_resp , bridge_hready_resp , dram_hready_resp , iram_hready_resp , flash_hready_resp}),
     .dst_hready      ({sim_ctrl_hready      , bridge_hready      , dram_hready      , iram_hready      , flash_hready}),
@@ -456,7 +489,7 @@ ahbl_crossbar #(
 `else
 
 ahbl_crossbar #(
-    .N_MASTERS  (2),
+    .N_MASTERS  (4),
     .N_SLAVES   (3),
     .W_ADDR     (W_ADDR),
     .W_DATA     (W_DATA),
@@ -466,17 +499,17 @@ ahbl_crossbar #(
 	.clk             (clk),
 	.rst_n           (rst_n),
 
-    .src_hready_resp ({i_hready     , d_hready}),
-    .src_hresp       ({i_hresp      , d_hresp}),
-    .src_haddr       ({i_haddr      , d_haddr}),
-    .src_hwrite      ({i_hwrite     , d_hwrite}),
-    .src_htrans      ({i_htrans     , d_htrans}),
-    .src_hsize       ({i_hsize      , d_hsize}),
-    .src_hburst      ({i_hburst     , d_hburst}),
-    .src_hprot       ({i_hprot      , d_hprot}),
-    .src_hmastlock   ({i_hmastlock  , d_hmastlock}),
-    .src_hwdata      ({i_hwdata     , d_hwdata}),
-    .src_hrdata      ({i_hrdata     , d_hrdata}),
+    .src_hready_resp ({i_hready     , dma1_hready     , dma0_hready     , d_hready}),
+    .src_hresp       ({i_hresp      , dma1_hresp      , dma0_hresp      , d_hresp}),
+    .src_haddr       ({i_haddr      , dma1_haddr      , dma0_haddr      , d_haddr}),
+    .src_hwrite      ({i_hwrite     , dma1_hwrite     , dma0_hwrite     , d_hwrite}),
+    .src_htrans      ({i_htrans     , dma1_htrans     , dma0_htrans     , d_htrans}),
+    .src_hsize       ({i_hsize      , dma1_hsize      , dma0_hsize      , d_hsize}),
+    .src_hburst      ({i_hburst     , dma1_hburst     , dma0_hburst     , d_hburst}),
+    .src_hprot       ({i_hprot      , dma1_hprot      , dma0_hprot      , d_hprot}),
+    .src_hmastlock   ({i_hmastlock  , dma1_hmastlock  , dma0_hmastlock  , d_hmastlock}),
+    .src_hwdata      ({i_hwdata     , dma1_hwdata     , dma0_hwdata     , d_hwdata}),
+    .src_hrdata      ({i_hrdata     , dma1_hrdata     , dma0_hrdata     , d_hrdata}),
 
     .dst_hready_resp ({bridge_hready_resp , dram_hready_resp , flash_hready_resp}),
     .dst_hready      ({bridge_hready      , dram_hready      , flash_hready}),
@@ -577,6 +610,24 @@ wire [31:0] pio1_prdata;
 wire        pio1_pready;
 wire        pio1_pslverr;
 
+wire        dma0_psel;
+wire        dma0_penable;
+wire        dma0_pwrite;
+wire [15:0] dma0_paddr;
+wire [31:0] dma0_pwdata;
+wire [31:0] dma0_prdata;
+wire        dma0_pready;
+wire        dma0_pslverr;
+
+wire        dma1_psel;
+wire        dma1_penable;
+wire        dma1_pwrite;
+wire [15:0] dma1_paddr;
+wire [31:0] dma1_pwdata;
+wire [31:0] dma1_prdata;
+wire        dma1_pready;
+wire        dma1_pslverr;
+
 ahbl_to_apb apb_bridge_u (
 	.clk               (clk),
 	.rst_n             (rst_n),
@@ -605,9 +656,9 @@ ahbl_to_apb apb_bridge_u (
 );
 
 apb_splitter #(
-	.N_SLAVES   (8),
-	.ADDR_MAP   (128'ha000_9000_8000_4000_3000_2000_1000_0000),
-	.ADDR_MASK  (128'hf000_f000_f000_f000_f000_f000_f000_f000)
+	.N_SLAVES   (10),
+	.ADDR_MAP   (160'hc000_b000_a000_9000_8000_4000_3000_2000_1000_0000),
+	.ADDR_MASK  (160'hf000_f000_f000_f000_f000_f000_f000_f000_f000_f000)
 ) inst_apb_splitter (
 	.apbs_paddr   (bridge_paddr),
 	.apbs_psel    (bridge_psel),
@@ -618,14 +669,14 @@ apb_splitter #(
 	.apbs_prdata  (bridge_prdata),
 	.apbs_pslverr (bridge_pslverr),
 
-	.apbm_paddr   ({pio1_paddr   , pio0_paddr   , xip_paddr   , uart_paddr   , timer0_paddr   , perireset_paddr   , sysinfo_paddr   , mach_timer_paddr  }),
-	.apbm_psel    ({pio1_psel    , pio0_psel    , xip_psel    , uart_psel    , timer0_psel    , perireset_psel    , sysinfo_psel    , mach_timer_psel   }),
-	.apbm_penable ({pio1_penable , pio0_penable , xip_penable , uart_penable , timer0_penable , perireset_penable , sysinfo_penable , mach_timer_penable}),
-	.apbm_pwrite  ({pio1_pwrite  , pio0_pwrite  , xip_pwrite  , uart_pwrite  , timer0_pwrite  , perireset_pwrite  , sysinfo_pwrite  , mach_timer_pwrite }),
-	.apbm_pwdata  ({pio1_pwdata  , pio0_pwdata  , xip_pwdata  , uart_pwdata  , timer0_pwdata  , perireset_pwdata  , sysinfo_pwdata  , mach_timer_pwdata }),
-	.apbm_pready  ({pio1_pready  , pio0_pready  , xip_pready  , uart_pready  , timer0_pready  , perireset_pready  , sysinfo_pready  , mach_timer_pready }),
-	.apbm_prdata  ({pio1_prdata  , pio0_prdata  , xip_prdata  , uart_prdata  , timer0_prdata  , perireset_prdata  , sysinfo_prdata  , mach_timer_prdata }),
-	.apbm_pslverr ({pio1_pslverr , pio0_pslverr , xip_pslverr , uart_pslverr , timer0_pslverr , perireset_pslverr , sysinfo_pslverr , mach_timer_pslverr})
+	.apbm_paddr   ({dma1_paddr   , dma0_paddr   , pio1_paddr   , pio0_paddr   , xip_paddr   , uart_paddr   , timer0_paddr   , perireset_paddr   , sysinfo_paddr   , mach_timer_paddr  }),
+	.apbm_psel    ({dma1_psel    , dma0_psel    , pio1_psel    , pio0_psel    , xip_psel    , uart_psel    , timer0_psel    , perireset_psel    , sysinfo_psel    , mach_timer_psel   }),
+	.apbm_penable ({dma1_penable , dma0_penable , pio1_penable , pio0_penable , xip_penable , uart_penable , timer0_penable , perireset_penable , sysinfo_penable , mach_timer_penable}),
+	.apbm_pwrite  ({dma1_pwrite  , dma0_pwrite  , pio1_pwrite  , pio0_pwrite  , xip_pwrite  , uart_pwrite  , timer0_pwrite  , perireset_pwrite  , sysinfo_pwrite  , mach_timer_pwrite }),
+	.apbm_pwdata  ({dma1_pwdata  , dma0_pwdata  , pio1_pwdata  , pio0_pwdata  , xip_pwdata  , uart_pwdata  , timer0_pwdata  , perireset_pwdata  , sysinfo_pwdata  , mach_timer_pwdata }),
+	.apbm_pready  ({dma1_pready  , dma0_pready  , pio1_pready  , pio0_pready  , xip_pready  , uart_pready  , timer0_pready  , perireset_pready  , sysinfo_pready  , mach_timer_pready }),
+	.apbm_prdata  ({dma1_prdata  , dma0_prdata  , pio1_prdata  , pio0_prdata  , xip_prdata  , uart_prdata  , timer0_prdata  , perireset_prdata  , sysinfo_prdata  , mach_timer_prdata }),
+	.apbm_pslverr ({dma1_pslverr , dma0_pslverr , pio1_pslverr , pio0_pslverr , xip_pslverr , uart_pslverr , timer0_pslverr , perireset_pslverr , sysinfo_pslverr , mach_timer_pslverr})
 );
 
 // ----------------------------------------------------------------------------
@@ -1048,6 +1099,80 @@ pio_multi #(
 	.gpio_out      (pio_out),
 	.gpio_dir      (pio_out_en),
 	.irq           ({pio1_irq, pio0_irq})
+);
+
+dma dma0 (
+	// AHB-Lite Master Interface
+	.ahbm_clk       (clk),
+	.ahbm_rst_n     (rst_n),
+
+	.ahbm_haddr     (dma0_haddr),
+	.ahbm_hwrite    (dma0_hwrite),
+	.ahbm_htrans    (dma0_htrans),
+	.ahbm_hsize     (dma0_hsize),
+	.ahbm_hburst    (dma0_hburst),
+	.ahbm_hprot     (dma0_hprot),
+	.ahbm_hmastlock (dma0_hmastlock),
+	.ahbm_hmaster   (dma0_hmaster),
+	.ahbm_hexcl     (dma0_hexcl),
+	.ahbm_hready    (dma0_hready),
+	.ahbm_hresp     (dma0_hresp),
+	.ahbm_hexokay   (1'b1),
+	.ahbm_hwdata    (dma0_hwdata),
+	.ahbm_hrdata    (dma0_hrdata),
+
+	// APB Slave Interface
+	.apbs_clk       (clk),
+	.apbs_rst_n     (rst_n),
+
+	.apbs_psel      (dma0_psel),
+	.apbs_penable   (dma0_penable),
+	.apbs_pwrite    (dma0_pwrite),
+	.apbs_paddr     (dma0_paddr),
+	.apbs_pwdata    (dma0_pwdata),
+	.apbs_prdata    (dma0_prdata),
+	.apbs_pready    (dma0_pready),
+	.apbs_pslverr   (dma0_pslverr),
+
+	// Interrupt
+	.irq            (dma0_irq)
+);
+
+dma dma1 (
+	// AHB-Lite Master Interface
+	.ahbm_clk       (clk),
+	.ahbm_rst_n     (rst_n),
+
+	.ahbm_haddr     (dma1_haddr),
+	.ahbm_hwrite    (dma1_hwrite),
+	.ahbm_htrans    (dma1_htrans),
+	.ahbm_hsize     (dma1_hsize),
+	.ahbm_hburst    (dma1_hburst),
+	.ahbm_hprot     (dma1_hprot),
+	.ahbm_hmastlock (dma1_hmastlock),
+	.ahbm_hmaster   (dma1_hmaster),
+	.ahbm_hexcl     (dma1_hexcl),
+	.ahbm_hready    (dma1_hready),
+	.ahbm_hresp     (dma1_hresp),
+	.ahbm_hexokay   (1'b1),
+	.ahbm_hwdata    (dma1_hwdata),
+	.ahbm_hrdata    (dma1_hrdata),
+
+	// APB Slave Interface
+	.apbs_clk       (clk),
+	.apbs_rst_n     (rst_n),
+
+	.apbs_psel      (dma1_psel),
+	.apbs_penable   (dma1_penable),
+	.apbs_pwrite    (dma1_pwrite),
+	.apbs_paddr     (dma1_paddr),
+	.apbs_pwdata    (dma1_pwdata),
+	.apbs_prdata    (dma1_prdata),
+	.apbs_pready    (dma1_pready),
+	.apbs_pslverr   (dma1_pslverr),
+
+	// Interrupt
+	.irq            (dma1_irq)
 );
 
 endmodule
