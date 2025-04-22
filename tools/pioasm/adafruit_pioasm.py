@@ -588,4 +588,4 @@ def assemble(program_text: str) -> array.array:
     such as the details about side-set pins can be easily passsed to the
     ``StateMachine`` constructor."""
     prog = Program(program_text)
-    return prog.assembled, prog.program_name, prog.pio_kwargs
+    return prog.assembled, prog.program_name, prog.pio_kwargs, prog.public_labels

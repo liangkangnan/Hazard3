@@ -11,7 +11,7 @@ f = open(args[1],"r");
 text = f.read();
 f.close()
 
-bin, program_name, pio_args = assemble(text)
+bin, program_name, pio_args, public_labels = assemble(text)
 
 #print('program name: ', program_name)
 #print('wrap: ', pio_args['wrap'])
@@ -27,8 +27,18 @@ f.close()
 
 f = open(args[3],"w")
 
+f.write('// Auto gen by pioasm tool, do not edit!!!\n\n')
+
 f.write('#ifndef _PIO_' + program_name.upper() + '_H_' + '\n')
 f.write('#define _PIO_' + program_name.upper() + '_H_' + '\n\n')
+
+need_enter = 0
+for key, val in public_labels.items():
+    f.write('#define ' + program_name + '_offset_' + key + ' ' + str(val))
+    f.write('\n')
+    need_enter = 1
+if need_enter:
+    f.write('\n')
 
 f.write('#define ' + program_name + '_wrap_target ' + str(pio_args['wrap_target']))
 f.write('\n')
