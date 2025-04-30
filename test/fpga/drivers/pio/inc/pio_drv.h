@@ -12,6 +12,7 @@
 #define PIO_INSTRUCTION_COUNT   32
 #define NUM_PIOS                2
 #define NUM_PIO_STATE_MACHINES  4
+#define PIO_SM_FIFO_COUNT       8
 
 typedef struct {
     volatile uint32_t clkdiv;
@@ -23,6 +24,12 @@ typedef struct {
     volatile uint32_t pull;
     volatile uint32_t fstat;
     volatile uint32_t fctrl;
+    volatile uint32_t tfpsi;
+    volatile uint32_t tfpli;
+    volatile uint32_t tfdc;
+    volatile uint32_t rfpsi;
+    volatile uint32_t rfpli;
+    volatile uint32_t rfdc;
 } pio_sm_hw_t;
 
 typedef struct {
@@ -311,6 +318,10 @@ static inline void pio_sm_config_set_clkdiv(pio_sm_config *c, uint32_t int_div, 
  */
 static inline void pio_sm_set_enabled(PIO pio, uint32_t sm, bool enabled) {
     pio->ctrl = (pio->ctrl & ~(1u << sm)) | ((uint8_t)(enabled) << sm);
+}
+
+static inline uint8_t pio_sm_is_enabled(PIO pio, uint32_t sm) {
+    return (pio->ctrl & (1u << sm));
 }
 
 int pio_sm_init(PIO pio, uint32_t sm, uint32_t initial_pc, const pio_sm_config *config);
@@ -750,39 +761,35 @@ static inline void pio_sm_config_set_fifo_join(pio_sm_config *c, enum pio_fifo_j
 }
 
 static inline void pio_sm_set_tx_fifo_pull_index(PIO pio, uint32_t sm, uint32_t index) {
-    pio->sm[sm].fctrl = (pio->sm[sm].fctrl & (~PIO_FCTRL0_TXFIFO_PULL_INDEX_MASK)) |
-                        (index << PIO_FCTRL0_TXFIFO_PULL_INDEX_LSB);
+    pio->sm[sm].tfpli = index;
 }
 
 static inline uint32_t pio_sm_get_tx_fifo_pull_index(PIO pio, uint32_t sm) {
-    return ((pio->sm[sm].fctrl & PIO_FCTRL0_TXFIFO_PULL_INDEX_MASK) >> PIO_FCTRL0_TXFIFO_PULL_INDEX_LSB);
+    return pio->sm[sm].tfpli;
 }
 
 static inline void pio_sm_set_rx_fifo_pull_index(PIO pio, uint32_t sm, uint32_t index) {
-    pio->sm[sm].fctrl = (pio->sm[sm].fctrl & (~PIO_FCTRL0_RXFIFO_PULL_INDEX_MASK)) |
-                        (index << PIO_FCTRL0_RXFIFO_PULL_INDEX_LSB);
+    pio->sm[sm].rfpli = index;
 }
 
 static inline uint32_t pio_sm_get_rx_fifo_pull_index(PIO pio, uint32_t sm) {
-    return ((pio->sm[sm].fctrl & PIO_FCTRL0_RXFIFO_PULL_INDEX_MASK) >> PIO_FCTRL0_RXFIFO_PULL_INDEX_LSB);
+    return pio->sm[sm].rfpli;
 }
 
 static inline void pio_sm_set_tx_fifo_push_index(PIO pio, uint32_t sm, uint32_t index) {
-    pio->sm[sm].fctrl = (pio->sm[sm].fctrl & (~PIO_FCTRL0_TXFIFO_PUSH_INDEX_MASK)) |
-                        (index << PIO_FCTRL0_TXFIFO_PUSH_INDEX_LSB);
+    pio->sm[sm].tfpsi = index;
 }
 
 static inline uint32_t pio_sm_get_tx_fifo_push_index(PIO pio, uint32_t sm) {
-    return ((pio->sm[sm].fctrl & PIO_FCTRL0_TXFIFO_PUSH_INDEX_MASK) >> PIO_FCTRL0_TXFIFO_PUSH_INDEX_LSB);
+    return pio->sm[sm].tfpsi;
 }
 
 static inline void pio_sm_set_rx_fifo_push_index(PIO pio, uint32_t sm, uint32_t index) {
-    pio->sm[sm].fctrl = (pio->sm[sm].fctrl & (~PIO_FCTRL0_RXFIFO_PUSH_INDEX_MASK)) |
-                        (index << PIO_FCTRL0_RXFIFO_PUSH_INDEX_LSB);
+    pio->sm[sm].rfpsi = index;
 }
 
 static inline uint32_t pio_sm_get_rx_fifo_push_index(PIO pio, uint32_t sm) {
-    return ((pio->sm[sm].fctrl & PIO_FCTRL0_RXFIFO_PUSH_INDEX_MASK) >> PIO_FCTRL0_RXFIFO_PUSH_INDEX_LSB);
+    return pio->sm[sm].rfpsi;
 }
 
 static inline void pio_sm_tx_fifo_read_enable(PIO pio, uint32_t sm, bool en) {
@@ -800,13 +807,11 @@ static inline void pio_sm_rx_fifo_write_enable(PIO pio, uint32_t sm, bool en) {
 }
 
 static inline void pio_sm_set_tx_fifo_count(PIO pio, uint32_t sm, uint32_t count) {
-    pio->sm[sm].fctrl = (pio->sm[sm].fctrl & (~PIO_FCTRL0_TX_FIFO_DATA_COUNT_MASK)) |
-                        (count << PIO_FCTRL0_TX_FIFO_DATA_COUNT_LSB);
+    pio->sm[sm].tfdc = count;
 }
 
 static inline void pio_sm_set_rx_fifo_count(PIO pio, uint32_t sm, uint32_t count) {
-    pio->sm[sm].fctrl = (pio->sm[sm].fctrl & (~PIO_FCTRL0_RX_FIFO_DATA_COUNT_MASK)) |
-                        (count << PIO_FCTRL0_RX_FIFO_DATA_COUNT_LSB);
+    pio->sm[sm].rfdc = count;
 }
 
 #endif
