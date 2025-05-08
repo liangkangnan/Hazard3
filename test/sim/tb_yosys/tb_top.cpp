@@ -85,6 +85,7 @@ int main(int argc, char **argv, char **env)
     bool propagate_return_code = false;
     uint32_t i, j;
     uint32_t reset_offset = 0x40;
+    uint8_t reset_offset_arg = 0;
 
     // 参数解析
     for (int i = 1; i < argc; ++i) {
@@ -125,6 +126,7 @@ int main(int argc, char **argv, char **env)
                 exit_help("Option --resetoffset requires an argument\n");
             reset_offset = std::stol(argv[i + 1], 0, 0);
             i += 1;
+            reset_offset_arg = 1;
 		} else if (s == "--retcode") {
             propagate_return_code = true;
 		} else if (s == "--dumpall") {
@@ -134,6 +136,9 @@ int main(int argc, char **argv, char **env)
             exit_help("");
         }
     }
+
+    if (!reset_offset_arg)
+        reset_offset = binaddr;
 
     // 检查bin addr范围
     if (binaddr >= FLASH_START && binaddr <= FLASH_END) {
