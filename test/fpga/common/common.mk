@@ -34,6 +34,9 @@ SRCS += $(SDK_PATH)/drivers/timer/src/timer_drv.c
 SRCS += $(SDK_PATH)/drivers/dma/src/dma_drv.c
 SRCS += $(SDK_PATH)/common/crt0.S $(SDK_PATH)/common/exception_table.S $(SDK_PATH)/common/external_irq_table.S $(SDK_PATH)/common/system.c $(SDK_PATH)/common/exception_handler.c
 SRCS += $(SDK_PATH)/common/syscalls.c
+ifdef USE_QUEUE
+SRCS += $(SDK_PATH)/common/queue.c
+endif
 SRCS += $(SDK_PATH)/common/printf.c
 SRCS += $(SDK_PATH)/common/wrap.c
 SRCS += $(SDK_PATH)/common/delay.c
