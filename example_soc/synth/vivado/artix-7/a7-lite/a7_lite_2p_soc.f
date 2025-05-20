@@ -25,6 +25,7 @@ list ../../../../libfpga/peris/sysinfo/sysinfo.f
 list ../../../../libfpga/peris/peri_reset/peri_reset.f
 list ../../../../libfpga/peris/timer/timer.f
 list ../../../../libfpga/peris/dma/dma.f
+list ../../../../libfpga/peris/crc/crc.f
 
 list ../../../../libfpga/busfabric/ahbl_crossbar.f
 file ../../../../libfpga/busfabric/ahbl_to_apb.v
