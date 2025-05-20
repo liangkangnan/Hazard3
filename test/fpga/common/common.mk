@@ -50,11 +50,13 @@ INCDIR += $(SDK_PATH)/drivers/pio/inc
 INCDIR += $(SDK_PATH)/drivers/perireset/inc
 INCDIR += $(SDK_PATH)/drivers/timer/inc
 INCDIR += $(SDK_PATH)/drivers/dma/inc
+INCDIR += $(SDK_PATH)/drivers/crc/inc
 INCDIR += $(SDK_PATH)/../../example_soc/libfpga/peris/uart
 INCDIR += $(SDK_PATH)/../../example_soc/libfpga/peris/spi_qspi_xip
 INCDIR += $(SDK_PATH)/../../example_soc/libfpga/peris/pio
 INCDIR += $(SDK_PATH)/../../example_soc/libfpga/peris/timer
 INCDIR += $(SDK_PATH)/../../example_soc/libfpga/peris/dma
+INCDIR += $(SDK_PATH)/../../example_soc/libfpga/peris/crc
 
 ###############################################################################
 
