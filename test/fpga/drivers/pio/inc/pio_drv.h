@@ -241,6 +241,11 @@ static inline void pio_sm_config_set_wrap(pio_sm_config *c, uint32_t wrap_bottom
                   (wrap_bottom << PIO_EXECCTRL0_WRAP_BOTTOM_LSB);
 }
 
+static inline void pio_sm_config_set_instr_offset(pio_sm_config *c, uint32_t offset) {
+    c->shiftctrl = (c->shiftctrl & ~(PIO_SHIFTCTRL0_INSTR_OFFSET_MASK)) |
+                   (offset << PIO_SHIFTCTRL0_INSTR_OFFSET_LSB);
+}
+
 /*! \brief Set the 'jmp' pin in a state machine configuration
  *  \ingroup sm_config
  *
