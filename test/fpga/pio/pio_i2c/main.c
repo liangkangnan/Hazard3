@@ -102,12 +102,15 @@ int main()
 
     printf("hello pio i2c!!!\n");
 
-    pio_sm_set_enabled(pio, sm, false);
+    int offset = pio_add_program(&pio, &sm, &i2c_program);
+    if (offset < 0) {
+        printf("Not enough space for sm!\n");
+        return -1;
+    }
 
-    pio_add_program_at_offset(pio, &i2c_program, 0);
-
-    pio_sm_config config;
-    pio_sm_config_set_wrap(&config, i2c_wrap_bottom, i2c_wrap_top);
+    pio_sm_config config = {0};
+    pio_sm_config_set_wrap(&config, offset + i2c_wrap_bottom, offset + i2c_wrap_top);
+    pio_sm_config_set_instr_offset(&config, offset);
     pio_sm_config_set_clkdiv(&config, 60, 0);
     pio_sm_config_set_in_pins(&config, I2C_SDA_PIN);
     pio_sm_config_set_in_shift(&config, false, false, 8);

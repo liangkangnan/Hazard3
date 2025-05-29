@@ -12,8 +12,8 @@
 
 #define ONEWIRE_PIN  3
 
-PIO pio = pio0;
-uint32_t sm = 0;
+PIO pio;
+uint32_t sm;
 
 
 static uint8_t ds18b20_crc8(uint8_t *data, uint8_t len)
@@ -78,18 +78,21 @@ int main()
 
     printf("hello pio onewire!!!\n");
 
-    pio_sm_set_enabled(pio, sm, false);
+    int offset = pio_add_program(&pio, &sm, &onewire_program);
+    if (offset < 0) {
+        printf("Not enough space for sm!\n");
+        return -1;
+    }
 
     pio_sm_config config = {0};
-    pio_sm_config_set_wrap(&config, onewire_wrap_bottom, onewire_wrap_top);
+    pio_sm_config_set_wrap(&config, offset + onewire_wrap_bottom, offset + onewire_wrap_top);
+    pio_sm_config_set_instr_offset(&config, offset);
     pio_sm_config_set_clkdiv(&config, 12, 0);
     pio_sm_config_set_in_pins(&config, ONEWIRE_PIN);
     pio_sm_config_set_in_shift(&config, true, true, 8);
     pio_sm_config_set_out_shift(&config, true, false, 8);
     pio_sm_config_set_sideset(&config, ONEWIRE_PIN, 1, true, true);
     pio_sm_init(pio, sm, 0, &config);
-
-    pio_add_program_at_offset(pio, &onewire_program, 0);
 
     pio_sm_set_consecutive_pindirs(pio, sm, ONEWIRE_PIN, 1, false);
     pio_gpio_data_bits_clr(pio, ONEWIRE_PIN);

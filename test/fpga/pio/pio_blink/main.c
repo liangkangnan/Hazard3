@@ -5,8 +5,11 @@
 #include "printf.h"
 #include "blink.h"
 
-PIO pio = pio0;
-uint32_t sm = 0;
+#define GPIO_BASE  8
+#define GPIO_COUNT 4
+
+PIO pio;
+uint32_t sm;
 
 int main()
 {
@@ -14,13 +17,19 @@ int main()
 
     printf("hello pio blink!!!\n");
 
-    pio_sm_config config = {0};
-    pio_sm_config_set_set_pins(&config, 8, 4);
-    pio_sm_config_set_wrap(&config, 0, blink_program.length - 1);
-    pio_sm_config_set_clkdiv(&config, 12000000, 0);
-    pio_add_program_at_offset(pio, &blink_program, 0);
+    int offset = pio_add_program(&pio, &sm, &blink_program);
+    if (offset < 0) {
+        printf("Not enough space for sm!\n");
+        return -1;
+    }
 
-    pio_sm_set_consecutive_pindirs(pio, sm, 8, 4, true);
+    pio_sm_config config = {0};
+    pio_sm_config_set_set_pins(&config, GPIO_BASE, GPIO_COUNT);
+    pio_sm_config_set_wrap(&config, offset + blink_wrap_bottom, offset + blink_wrap_top);
+    pio_sm_config_set_instr_offset(&config, offset);
+    pio_sm_config_set_clkdiv(&config, 12000000, 0);
+
+    pio_sm_set_consecutive_pindirs(pio, sm, GPIO_BASE, GPIO_COUNT, true);
 
     pio_sm_init(pio, sm, 0, &config);
     pio_sm_set_enabled(pio, sm, true);

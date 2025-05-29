@@ -11,8 +11,8 @@
 #define PIO0_IRQ_NUM         1
 #define PIO0_IRQ_PRIORITY    4
 
-PIO pio = pio0;
-uint32_t sm = 0;
+PIO pio;
+uint32_t sm;
 
 void pio0_irq_handler();
 
@@ -28,14 +28,19 @@ int main()
     h3irq_set_priority(PIO0_IRQ_NUM, PIO0_IRQ_PRIORITY);
     h3irq_set_external_irq_handler(PIO0_IRQ_NUM, pio0_irq_handler);
 
+    int offset = pio_add_program(&pio, &sm, &irq_program);
+    if (offset < 0) {
+        printf("Not enough space for sm!\n");
+        return -1;
+    }
+
     pio_sm_config config = {0};
-    pio_sm_config_set_wrap(&config, 0, irq_program.length - 1);
+    pio_sm_config_set_wrap(&config, offset + irq_wrap_bottom, offset + irq_wrap_top);
+    pio_sm_config_set_instr_offset(&config, offset);
     pio_sm_config_set_clkdiv(&config, 120000, 0);
     pio_sm_config_set_out_pins(&config, 0, 1);
     pio_sm_config_set_out_shift(&config, true, false, 32);
     pio_sm_init(pio, sm, 0, &config);
-
-    pio_add_program_at_offset(pio, &irq_program, 0);
 
     pio_sm_set_consecutive_pindirs(pio, sm, 0, 1, true);
 

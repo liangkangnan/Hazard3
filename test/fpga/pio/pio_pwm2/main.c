@@ -66,7 +66,7 @@ int main()
 {
     uart_init(115200);
 
-    printf("hello pio pwm!!!\n");
+    printf("hello pio pwm2!!!\n");
 
     int offset = pio_add_program(&pio, &sm, &pwm2_program);
     if (offset < 0) {
@@ -77,16 +77,16 @@ int main()
     pio_sm_config config = {0};
     pio_sm_config_set_sideset(&config, PWM_OUT_IO, 1, true, false);
     pio_sm_config_set_wrap(&config, offset + pwm2_wrap_bottom, offset + pwm2_wrap_top);
+    pio_sm_config_set_instr_offset(&config, offset);
     // pwm freq = 12M / 2 / 300 = 20KHz
     pio_sm_config_set_clkdiv(&config, 2, 0);
-    pio_add_program_at_offset(pio, &pwm2_program, 0);
 
     pio_sm_set_consecutive_pindirs(pio, sm, PWM_OUT_IO, 1, true);
     pio_sm_init(pio, sm, 0, &config);
 
     pio_sm_set_tx_fifo_shadow_mode_enabled(pio, sm, 1);
 
-    printf("pio pwm started\n");
+    printf("pio pwm2 started\n");
 
     while (1) {
         // 20KHz, 20%

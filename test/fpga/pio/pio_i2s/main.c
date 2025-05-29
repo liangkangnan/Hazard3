@@ -31,7 +31,8 @@ int main()
     }
 
     pio_sm_config config = {0};
-    pio_sm_config_set_wrap(&config, offset, offset + i2s_program.length - 1);
+    pio_sm_config_set_wrap(&config, offset + i2s_wrap_bottom, offset + i2s_wrap_top);
+    pio_sm_config_set_instr_offset(&config, offset);
     //pio_sm_config_set_clkdiv(&config, get_core_clock_hz() / 2 / (SAMPLE_RATE * CHANNELS * BITS) + 0.5f, 0);
     pio_sm_config_set_clkdiv(&config, 2, 0);
     pio_sm_config_set_out_pins(&config, DOUT_PIN, 1);
@@ -45,7 +46,7 @@ int main()
     // set y, 30 side 0
     pio_sm_exec(pio, sm, pio_encode_set(pio_y, BITS - 2) | pio_encode_sideset(2, 0));
 
-    pio_sm_init(pio, sm, offset, &config);
+    pio_sm_init(pio, sm, 0, &config);
     pio_sm_set_enabled(pio, sm, true);
 
     printf("pio i2s started\n");

@@ -23,8 +23,10 @@
 
 #define LED_NUM     3
 
-PIO pio = pio0;
-uint32_t sm = 0;
+#define WS2812_IO   2
+
+PIO pio;
+uint32_t sm;
 
 
 void ws2812_set_color(uint32_t led_color[])
@@ -63,18 +65,24 @@ int main()
 
     printf("hello pio ws2812!!!\n");
 
+    int offset = pio_add_program(&pio, &sm, &ws2812_program);
+    if (offset < 0) {
+        printf("Not enough space for sm!\n");
+        return -1;
+    }
+
     pio_sm_config config = {0};
-    pio_sm_config_set_wrap(&config, ws2812_wrap_bottom, ws2812_wrap_top);
+    pio_sm_config_set_wrap(&config, offset + ws2812_wrap_bottom, offset + ws2812_wrap_top);
+    pio_sm_config_set_instr_offset(&config, offset);
     // set clk = 3MHz
     pio_sm_config_set_clkdiv(&config, 4, 0);
-    pio_add_program_at_offset(pio, &ws2812_program, 0);
 
-    pio_sm_config_set_out_pins(&config, 2, 1);
+    pio_sm_config_set_out_pins(&config, WS2812_IO, 1);
     pio_sm_config_set_out_shift(&config, true, true, 32);
     pio_sm_config_set_fifo_join(&config, PIO_FIFO_JOIN_TX);
     pio_sm_init(pio, sm, 0, &config);
 
-    pio_sm_set_consecutive_pindirs(pio, sm, 2, 1, true);
+    pio_sm_set_consecutive_pindirs(pio, sm, WS2812_IO, 1, true);
 
     printf("pio ws2812 started\n");
 

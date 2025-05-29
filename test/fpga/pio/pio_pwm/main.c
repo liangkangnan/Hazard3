@@ -74,10 +74,10 @@ int main()
     pio_sm_config_set_out_pins(&config, PWM_OUT_IO, 1);
     pio_sm_config_set_out_shift(&config, true, true, 32);
     pio_sm_config_set_wrap(&config, offset + pwm_wrap_bottom, offset + pwm_wrap_top);
+    pio_sm_config_set_instr_offset(&config, offset);
     // pwm freq = 12M / 4 / 256 = 11.7KHz
     pio_sm_config_set_clkdiv(&config, 4, 0);
     pio_sm_config_set_fifo_join(&config, PIO_FIFO_JOIN_TX);
-    pio_add_program_at_offset(pio, &pwm_program, 0);
 
     pio_sm_set_consecutive_pindirs(pio, sm, PWM_OUT_IO, 1, true);
     pio_sm_init(pio, sm, 0, &config);

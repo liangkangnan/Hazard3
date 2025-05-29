@@ -35,9 +35,10 @@ int main()
         pio_sm_config config = {0};
         pio_sm_config_set_set_pins(&config, len_pin[i], 1);
         pio_sm_config_set_wrap(&config, offset[i] + multi_sm_wrap_bottom, offset[i] + multi_sm_wrap_top);
+        pio_sm_config_set_instr_offset(&config, offset[i]);
         pio_sm_config_set_clkdiv(&config, 12000000 / (i + 1), 0);
         pio_sm_set_consecutive_pindirs(pio[i], sm[i], len_pin[i], 1, true);
-        pio_sm_init(pio[i], sm[i], offset[i], &config);
+        pio_sm_init(pio[i], sm[i], 0, &config);
         pio_sm_set_enabled(pio[i], sm[i], true);
     }
 
