@@ -20,19 +20,19 @@ import array
 import re
 
 splitter = re.compile(r",\s*|\s+(?:,\s*)?").split
-mov_splitter = re.compile("!|~|::").split
+mov_splitter = re.compile("!|~|::|--").split
 
 __version__ = "0.0.0+auto.0"
 __repo__ = "https://github.com/adafruit/Adafruit_CircuitPython_PIOASM.git"
 
-CONDITIONS = ["", "!x", "x--", "!y", "y--", "x!=y", "pin", "!osre"]
+CONDITIONS = ["", "!x", "x--", "!y", "y--", "x!=y", "pin", "!pin"]
 IN_SOURCES = ["pins", "x", "y", "null", None, None, "isr", "osr"]
 OUT_DESTINATIONS = ["pins", "x", "y", "null", "pindirs", "pc", "isr", "exec"]
 WAIT_SOURCES = ["gpio", "pin", "irq", None]
 MOV_DESTINATIONS_V0 = ["pins", "x", "y", None, "exec", "pc", "isr", "osr"]
 MOV_DESTINATIONS_V1 = ["pins", "x", "y", "pindirs", "exec", "pc", "isr", "osr"]
 MOV_SOURCES = ["pins", "x", "y", "null", None, "status", "isr", "osr"]
-MOV_OPS = [None, "~", "::", None]
+MOV_OPS = [None, "~", "::", "--" , None]
 SET_DESTINATIONS = ["pins", "x", "y", None, "pindirs", None, None, None]
 FIFO_TYPES = {
     "auto": 0,
@@ -264,7 +264,10 @@ class Program:  # pylint: disable=too-few-public-methods
             if len(instruction) > 2 and instruction[-2] == "side":
                 if sideset_count == 0:
                     raise RuntimeError("No side_set count set")
-                sideset_value = int(instruction[-1], 0)
+                if str(instruction[-1]).startswith('0x') or str(instruction[-1]).startswith('0X'):
+                    sideset_value = int(instruction[-1], 16)
+                else:
+                    sideset_value = int(instruction[-1], 0)
                 if sideset_value >= 2**sideset_count:
                     raise RuntimeError("Sideset value too large")
                 delay |= sideset_value << (5 - sideset_count - sideset_enable)
@@ -403,6 +406,8 @@ class Program:  # pylint: disable=too-few-public-methods
                             assembled[-1] |= 0x08
                         elif source[:2] == "::":
                             assembled[-1] |= 0x10
+                        elif source[:2] == "--":
+                            assembled[-1] |= 0x18
                         else:
                             raise RuntimeError("Invalid mov operator:", source[:1])
                     if len(instruction) > 3:
