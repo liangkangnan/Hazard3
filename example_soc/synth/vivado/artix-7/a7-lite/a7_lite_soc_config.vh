@@ -43,6 +43,7 @@ localparam RESET_REGFILE       = 0;
 localparam BRANCH_PREDICTOR    = 1;
 localparam MTVEC_WMASK         = 32'hfffffffd;
 localparam ICACHE              = 1;
+localparam TFPU                = 1;
 
 localparam MACH_TIMER_RESET_BIT= 0;
 localparam UART_RESET_BIT      = 1;

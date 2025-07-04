@@ -637,6 +637,15 @@ wire [31:0] crc_prdata;
 wire        crc_pready;
 wire        crc_pslverr;
 
+wire        tfpu_psel;
+wire        tfpu_penable;
+wire        tfpu_pwrite;
+wire [15:0] tfpu_paddr;
+wire [31:0] tfpu_pwdata;
+wire [31:0] tfpu_prdata;
+wire        tfpu_pready;
+wire        tfpu_pslverr;
+
 ahbl_to_apb apb_bridge_u (
 	.clk               (clk),
 	.rst_n             (rst_n),
@@ -664,6 +673,35 @@ ahbl_to_apb apb_bridge_u (
 	.apbm_pslverr      (bridge_pslverr)
 );
 
+generate
+if (TFPU == 1) begin: has_tfpu
+
+apb_splitter #(
+	.N_SLAVES   (12),
+	.ADDR_MAP   (192'he000_c000_b000_a000_9000_8000_7000_4000_3000_2000_1000_0000),
+	.ADDR_MASK  (192'hf000_f000_f000_f000_f000_f000_f000_f000_f000_f000_f000_f000)
+) inst_apb_splitter (
+	.apbs_paddr   (bridge_paddr),
+	.apbs_psel    (bridge_psel),
+	.apbs_penable (bridge_penable),
+	.apbs_pwrite  (bridge_pwrite),
+	.apbs_pwdata  (bridge_pwdata),
+	.apbs_pready  (bridge_pready),
+	.apbs_prdata  (bridge_prdata),
+	.apbs_pslverr (bridge_pslverr),
+
+	.apbm_paddr   ({crc_paddr   , dma1_paddr   , dma0_paddr   , pio1_paddr   , pio0_paddr   , xip_paddr   , tfpu_paddr   , uart_paddr   , timer0_paddr   , perireset_paddr   , sysinfo_paddr   , mach_timer_paddr  }),
+	.apbm_psel    ({crc_psel    , dma1_psel    , dma0_psel    , pio1_psel    , pio0_psel    , xip_psel    , tfpu_psel    , uart_psel    , timer0_psel    , perireset_psel    , sysinfo_psel    , mach_timer_psel   }),
+	.apbm_penable ({crc_penable , dma1_penable , dma0_penable , pio1_penable , pio0_penable , xip_penable , tfpu_penable , uart_penable , timer0_penable , perireset_penable , sysinfo_penable , mach_timer_penable}),
+	.apbm_pwrite  ({crc_pwrite  , dma1_pwrite  , dma0_pwrite  , pio1_pwrite  , pio0_pwrite  , xip_pwrite  , tfpu_pwrite  , uart_pwrite  , timer0_pwrite  , perireset_pwrite  , sysinfo_pwrite  , mach_timer_pwrite }),
+	.apbm_pwdata  ({crc_pwdata  , dma1_pwdata  , dma0_pwdata  , pio1_pwdata  , pio0_pwdata  , xip_pwdata  , tfpu_pwdata  , uart_pwdata  , timer0_pwdata  , perireset_pwdata  , sysinfo_pwdata  , mach_timer_pwdata }),
+	.apbm_pready  ({crc_pready  , dma1_pready  , dma0_pready  , pio1_pready  , pio0_pready  , xip_pready  , tfpu_pready  , uart_pready  , timer0_pready  , perireset_pready  , sysinfo_pready  , mach_timer_pready }),
+	.apbm_prdata  ({crc_prdata  , dma1_prdata  , dma0_prdata  , pio1_prdata  , pio0_prdata  , xip_prdata  , tfpu_prdata  , uart_prdata  , timer0_prdata  , perireset_prdata  , sysinfo_prdata  , mach_timer_prdata }),
+	.apbm_pslverr ({crc_pslverr , dma1_pslverr , dma0_pslverr , pio1_pslverr , pio0_pslverr , xip_pslverr , tfpu_pslverr , uart_pslverr , timer0_pslverr , perireset_pslverr , sysinfo_pslverr , mach_timer_pslverr})
+);
+
+end else begin: no_tfpu
+
 apb_splitter #(
 	.N_SLAVES   (11),
 	.ADDR_MAP   (176'he000_c000_b000_a000_9000_8000_4000_3000_2000_1000_0000),
@@ -687,6 +725,9 @@ apb_splitter #(
 	.apbm_prdata  ({crc_prdata  , dma1_prdata  , dma0_prdata  , pio1_prdata  , pio0_prdata  , xip_prdata  , uart_prdata  , timer0_prdata  , perireset_prdata  , sysinfo_prdata  , mach_timer_prdata }),
 	.apbm_pslverr ({crc_pslverr , dma1_pslverr , dma0_pslverr , pio1_pslverr , pio0_pslverr , xip_pslverr , uart_pslverr , timer0_pslverr , perireset_pslverr , sysinfo_pslverr , mach_timer_pslverr})
 );
+
+end
+endgenerate
 
 // ----------------------------------------------------------------------------
 // Memory and peripherals
@@ -1231,5 +1272,23 @@ crc #(
 	.apbs_pready    (crc_pready),
 	.apbs_pslverr   (crc_pslverr)
 );
+
+generate
+if (TFPU == 1) begin: has_tfpu
+tfpu_top tfpu (
+	.clk            (clk),
+	.rst_n          (rst_n),
+
+	.apbs_psel      (tfpu_psel),
+	.apbs_penable   (tfpu_penable),
+	.apbs_pwrite    (tfpu_pwrite),
+	.apbs_paddr     (tfpu_paddr),
+	.apbs_pwdata    (tfpu_pwdata),
+	.apbs_prdata    (tfpu_prdata),
+	.apbs_pready    (tfpu_pready),
+	.apbs_pslverr   (tfpu_pslverr)
+);
+end
+endgenerate
 
 endmodule
