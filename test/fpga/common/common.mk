@@ -51,12 +51,14 @@ INCDIR += $(SDK_PATH)/drivers/perireset/inc
 INCDIR += $(SDK_PATH)/drivers/timer/inc
 INCDIR += $(SDK_PATH)/drivers/dma/inc
 INCDIR += $(SDK_PATH)/drivers/crc/inc
+INCDIR += $(SDK_PATH)/drivers/tfpu/inc
 INCDIR += $(SDK_PATH)/../../example_soc/libfpga/peris/uart
 INCDIR += $(SDK_PATH)/../../example_soc/libfpga/peris/spi_qspi_xip
 INCDIR += $(SDK_PATH)/../../example_soc/libfpga/peris/pio
 INCDIR += $(SDK_PATH)/../../example_soc/libfpga/peris/timer
 INCDIR += $(SDK_PATH)/../../example_soc/libfpga/peris/dma
 INCDIR += $(SDK_PATH)/../../example_soc/libfpga/peris/crc
+INCDIR += $(SDK_PATH)/../../example_soc/libfpga/peris/tfpu
 
 ###############################################################################
 
@@ -80,7 +82,7 @@ $(APP).bin: $(APP).elf
 	$(SDK_PATH)/../../tools/mkflashbin.py $(SDK_PATH)/bootrom/bootrom.bin $(APP).bin $(APP).flash
 
 $(APP).elf: $(SRCS) $(wildcard %.h)
-	$(CROSS_PREFIX)gcc $(CCFLAGS) $(SRCS) -T $(LDSCRIPT) $(addprefix -I,$(INCDIR)) -o $@
+	$(CROSS_PREFIX)gcc $(CCFLAGS) $(SRCS) -T $(LDSCRIPT) $(addprefix -I,$(INCDIR)) -o $@ $(LDFLAG)
 
 $(SDK_PATH)/bootrom/bootrom.bin:
 	make -C $(SDK_PATH)/bootrom/
