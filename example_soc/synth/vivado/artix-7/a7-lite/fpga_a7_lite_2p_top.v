@@ -31,6 +31,9 @@ module fpga_a7_lite_2p_top (
 	inout  wire [31:0] pio,
 `endif
 
+	input  wire       adc_cmp_in,
+	output wire       adc_pwm_out,
+
 	output wire       uart_tx,
 	input  wire       uart_rx
 );
@@ -136,6 +139,9 @@ module fpga_a7_lite_2p_top (
 		.xip_dout       (xip_dout),
 		.xip_douten     (xip_douten),
 		.xip_din        (xip_din),
+
+		.adc_cmp_in     (adc_cmp_in),
+		.adc_pwm_out    (adc_pwm_out),
 
         .uart_tx        (uart_tx),
         .uart_rx        (uart_rx)

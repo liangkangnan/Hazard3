@@ -43,6 +43,10 @@ module a7_lite_2p_soc #(
 	output wire [31:0]       pio_out,
 	output wire [31:0]       pio_out_en,
 
+	// SD ADC
+	input  wire              adc_cmp_in,
+	output wire              adc_pwm_out,
+
 	// UART
 	output wire              uart_tx,
 	input  wire              uart_rx
@@ -279,6 +283,7 @@ wire              pio1_irq;
 wire              timer0_irq;
 wire              dma0_irq;
 wire              dma1_irq;
+wire              adc_irq;
 
 wire [15:0]       peri_reset_n_req;
 
@@ -357,10 +362,10 @@ hazard3_cpu_2port #(
 	.dbg_sbus_wdata             (sbus_wdata),
 	.dbg_sbus_rdata             (sbus_rdata),
 `ifdef SIMULATION
-	.irq                        ({irq[NUM_IRQS-1:6], dma1_irq | irq[5], dma0_irq | irq[4], timer0_irq | irq[3], pio1_irq | irq[2], pio0_irq | irq[1], uart_irq | irq[0]}),
+	.irq                        ({irq[NUM_IRQS-1:7], adc_irq | irq[6], dma1_irq | irq[5], dma0_irq | irq[4], timer0_irq | irq[3], pio1_irq | irq[2], pio0_irq | irq[1], uart_irq | irq[0]}),
 	.soft_irq                   (soft_irq),
 `else
-	.irq                        ({{NUM_IRQS-6{1'b0}}, dma1_irq, dma0_irq, timer0_irq, pio1_irq, pio0_irq, uart_irq}),
+	.irq                        ({{NUM_IRQS-7{1'b0}}, adc_irq, dma1_irq, dma0_irq, timer0_irq, pio1_irq, pio0_irq, uart_irq}),
 	.soft_irq                   (1'b0),
 `endif
 	.timer_irq                  (timer_irq)
@@ -646,6 +651,15 @@ wire [31:0] tfpu_prdata;
 wire        tfpu_pready;
 wire        tfpu_pslverr;
 
+wire        sdadc_psel;
+wire        sdadc_penable;
+wire        sdadc_pwrite;
+wire [15:0] sdadc_paddr;
+wire [31:0] sdadc_pwdata;
+wire [31:0] sdadc_prdata;
+wire        sdadc_pready;
+wire        sdadc_pslverr;
+
 ahbl_to_apb apb_bridge_u (
 	.clk               (clk),
 	.rst_n             (rst_n),
@@ -677,8 +691,34 @@ generate
 if (TFPU == 1) begin: has_tfpu
 
 apb_splitter #(
+	.N_SLAVES   (13),
+	.ADDR_MAP   (208'he000_d000_c000_b000_a000_9000_8000_7000_4000_3000_2000_1000_0000),
+	.ADDR_MASK  (208'hf000_f000_f000_f000_f000_f000_f000_f000_f000_f000_f000_f000_f000)
+) inst_apb_splitter (
+	.apbs_paddr   (bridge_paddr),
+	.apbs_psel    (bridge_psel),
+	.apbs_penable (bridge_penable),
+	.apbs_pwrite  (bridge_pwrite),
+	.apbs_pwdata  (bridge_pwdata),
+	.apbs_pready  (bridge_pready),
+	.apbs_prdata  (bridge_prdata),
+	.apbs_pslverr (bridge_pslverr),
+
+	.apbm_paddr   ({crc_paddr   , sdadc_paddr   , dma1_paddr   , dma0_paddr   , pio1_paddr   , pio0_paddr   , xip_paddr   , tfpu_paddr   , uart_paddr   , timer0_paddr   , perireset_paddr   , sysinfo_paddr   , mach_timer_paddr  }),
+	.apbm_psel    ({crc_psel    , sdadc_psel    , dma1_psel    , dma0_psel    , pio1_psel    , pio0_psel    , xip_psel    , tfpu_psel    , uart_psel    , timer0_psel    , perireset_psel    , sysinfo_psel    , mach_timer_psel   }),
+	.apbm_penable ({crc_penable , sdadc_penable , dma1_penable , dma0_penable , pio1_penable , pio0_penable , xip_penable , tfpu_penable , uart_penable , timer0_penable , perireset_penable , sysinfo_penable , mach_timer_penable}),
+	.apbm_pwrite  ({crc_pwrite  , sdadc_pwrite  , dma1_pwrite  , dma0_pwrite  , pio1_pwrite  , pio0_pwrite  , xip_pwrite  , tfpu_pwrite  , uart_pwrite  , timer0_pwrite  , perireset_pwrite  , sysinfo_pwrite  , mach_timer_pwrite }),
+	.apbm_pwdata  ({crc_pwdata  , sdadc_pwdata  , dma1_pwdata  , dma0_pwdata  , pio1_pwdata  , pio0_pwdata  , xip_pwdata  , tfpu_pwdata  , uart_pwdata  , timer0_pwdata  , perireset_pwdata  , sysinfo_pwdata  , mach_timer_pwdata }),
+	.apbm_pready  ({crc_pready  , sdadc_pready  , dma1_pready  , dma0_pready  , pio1_pready  , pio0_pready  , xip_pready  , tfpu_pready  , uart_pready  , timer0_pready  , perireset_pready  , sysinfo_pready  , mach_timer_pready }),
+	.apbm_prdata  ({crc_prdata  , sdadc_prdata  , dma1_prdata  , dma0_prdata  , pio1_prdata  , pio0_prdata  , xip_prdata  , tfpu_prdata  , uart_prdata  , timer0_prdata  , perireset_prdata  , sysinfo_prdata  , mach_timer_prdata }),
+	.apbm_pslverr ({crc_pslverr , sdadc_pslverr , dma1_pslverr , dma0_pslverr , pio1_pslverr , pio0_pslverr , xip_pslverr , tfpu_pslverr , uart_pslverr , timer0_pslverr , perireset_pslverr , sysinfo_pslverr , mach_timer_pslverr})
+);
+
+end else begin: no_tfpu
+
+apb_splitter #(
 	.N_SLAVES   (12),
-	.ADDR_MAP   (192'he000_c000_b000_a000_9000_8000_7000_4000_3000_2000_1000_0000),
+	.ADDR_MAP   (192'he000_d000_c000_b000_a000_9000_8000_4000_3000_2000_1000_0000),
 	.ADDR_MASK  (192'hf000_f000_f000_f000_f000_f000_f000_f000_f000_f000_f000_f000)
 ) inst_apb_splitter (
 	.apbs_paddr   (bridge_paddr),
@@ -690,40 +730,14 @@ apb_splitter #(
 	.apbs_prdata  (bridge_prdata),
 	.apbs_pslverr (bridge_pslverr),
 
-	.apbm_paddr   ({crc_paddr   , dma1_paddr   , dma0_paddr   , pio1_paddr   , pio0_paddr   , xip_paddr   , tfpu_paddr   , uart_paddr   , timer0_paddr   , perireset_paddr   , sysinfo_paddr   , mach_timer_paddr  }),
-	.apbm_psel    ({crc_psel    , dma1_psel    , dma0_psel    , pio1_psel    , pio0_psel    , xip_psel    , tfpu_psel    , uart_psel    , timer0_psel    , perireset_psel    , sysinfo_psel    , mach_timer_psel   }),
-	.apbm_penable ({crc_penable , dma1_penable , dma0_penable , pio1_penable , pio0_penable , xip_penable , tfpu_penable , uart_penable , timer0_penable , perireset_penable , sysinfo_penable , mach_timer_penable}),
-	.apbm_pwrite  ({crc_pwrite  , dma1_pwrite  , dma0_pwrite  , pio1_pwrite  , pio0_pwrite  , xip_pwrite  , tfpu_pwrite  , uart_pwrite  , timer0_pwrite  , perireset_pwrite  , sysinfo_pwrite  , mach_timer_pwrite }),
-	.apbm_pwdata  ({crc_pwdata  , dma1_pwdata  , dma0_pwdata  , pio1_pwdata  , pio0_pwdata  , xip_pwdata  , tfpu_pwdata  , uart_pwdata  , timer0_pwdata  , perireset_pwdata  , sysinfo_pwdata  , mach_timer_pwdata }),
-	.apbm_pready  ({crc_pready  , dma1_pready  , dma0_pready  , pio1_pready  , pio0_pready  , xip_pready  , tfpu_pready  , uart_pready  , timer0_pready  , perireset_pready  , sysinfo_pready  , mach_timer_pready }),
-	.apbm_prdata  ({crc_prdata  , dma1_prdata  , dma0_prdata  , pio1_prdata  , pio0_prdata  , xip_prdata  , tfpu_prdata  , uart_prdata  , timer0_prdata  , perireset_prdata  , sysinfo_prdata  , mach_timer_prdata }),
-	.apbm_pslverr ({crc_pslverr , dma1_pslverr , dma0_pslverr , pio1_pslverr , pio0_pslverr , xip_pslverr , tfpu_pslverr , uart_pslverr , timer0_pslverr , perireset_pslverr , sysinfo_pslverr , mach_timer_pslverr})
-);
-
-end else begin: no_tfpu
-
-apb_splitter #(
-	.N_SLAVES   (11),
-	.ADDR_MAP   (176'he000_c000_b000_a000_9000_8000_4000_3000_2000_1000_0000),
-	.ADDR_MASK  (176'hf000_f000_f000_f000_f000_f000_f000_f000_f000_f000_f000)
-) inst_apb_splitter (
-	.apbs_paddr   (bridge_paddr),
-	.apbs_psel    (bridge_psel),
-	.apbs_penable (bridge_penable),
-	.apbs_pwrite  (bridge_pwrite),
-	.apbs_pwdata  (bridge_pwdata),
-	.apbs_pready  (bridge_pready),
-	.apbs_prdata  (bridge_prdata),
-	.apbs_pslverr (bridge_pslverr),
-
-	.apbm_paddr   ({crc_paddr   , dma1_paddr   , dma0_paddr   , pio1_paddr   , pio0_paddr   , xip_paddr   , uart_paddr   , timer0_paddr   , perireset_paddr   , sysinfo_paddr   , mach_timer_paddr  }),
-	.apbm_psel    ({crc_psel    , dma1_psel    , dma0_psel    , pio1_psel    , pio0_psel    , xip_psel    , uart_psel    , timer0_psel    , perireset_psel    , sysinfo_psel    , mach_timer_psel   }),
-	.apbm_penable ({crc_penable , dma1_penable , dma0_penable , pio1_penable , pio0_penable , xip_penable , uart_penable , timer0_penable , perireset_penable , sysinfo_penable , mach_timer_penable}),
-	.apbm_pwrite  ({crc_pwrite  , dma1_pwrite  , dma0_pwrite  , pio1_pwrite  , pio0_pwrite  , xip_pwrite  , uart_pwrite  , timer0_pwrite  , perireset_pwrite  , sysinfo_pwrite  , mach_timer_pwrite }),
-	.apbm_pwdata  ({crc_pwdata  , dma1_pwdata  , dma0_pwdata  , pio1_pwdata  , pio0_pwdata  , xip_pwdata  , uart_pwdata  , timer0_pwdata  , perireset_pwdata  , sysinfo_pwdata  , mach_timer_pwdata }),
-	.apbm_pready  ({crc_pready  , dma1_pready  , dma0_pready  , pio1_pready  , pio0_pready  , xip_pready  , uart_pready  , timer0_pready  , perireset_pready  , sysinfo_pready  , mach_timer_pready }),
-	.apbm_prdata  ({crc_prdata  , dma1_prdata  , dma0_prdata  , pio1_prdata  , pio0_prdata  , xip_prdata  , uart_prdata  , timer0_prdata  , perireset_prdata  , sysinfo_prdata  , mach_timer_prdata }),
-	.apbm_pslverr ({crc_pslverr , dma1_pslverr , dma0_pslverr , pio1_pslverr , pio0_pslverr , xip_pslverr , uart_pslverr , timer0_pslverr , perireset_pslverr , sysinfo_pslverr , mach_timer_pslverr})
+	.apbm_paddr   ({crc_paddr   , sdadc_paddr   , dma1_paddr   , dma0_paddr   , pio1_paddr   , pio0_paddr   , xip_paddr   , uart_paddr   , timer0_paddr   , perireset_paddr   , sysinfo_paddr   , mach_timer_paddr  }),
+	.apbm_psel    ({crc_psel    , sdadc_psel    , dma1_psel    , dma0_psel    , pio1_psel    , pio0_psel    , xip_psel    , uart_psel    , timer0_psel    , perireset_psel    , sysinfo_psel    , mach_timer_psel   }),
+	.apbm_penable ({crc_penable , sdadc_penable , dma1_penable , dma0_penable , pio1_penable , pio0_penable , xip_penable , uart_penable , timer0_penable , perireset_penable , sysinfo_penable , mach_timer_penable}),
+	.apbm_pwrite  ({crc_pwrite  , sdadc_pwrite  , dma1_pwrite  , dma0_pwrite  , pio1_pwrite  , pio0_pwrite  , xip_pwrite  , uart_pwrite  , timer0_pwrite  , perireset_pwrite  , sysinfo_pwrite  , mach_timer_pwrite }),
+	.apbm_pwdata  ({crc_pwdata  , sdadc_pwdata  , dma1_pwdata  , dma0_pwdata  , pio1_pwdata  , pio0_pwdata  , xip_pwdata  , uart_pwdata  , timer0_pwdata  , perireset_pwdata  , sysinfo_pwdata  , mach_timer_pwdata }),
+	.apbm_pready  ({crc_pready  , sdadc_pready  , dma1_pready  , dma0_pready  , pio1_pready  , pio0_pready  , xip_pready  , uart_pready  , timer0_pready  , perireset_pready  , sysinfo_pready  , mach_timer_pready }),
+	.apbm_prdata  ({crc_prdata  , sdadc_prdata  , dma1_prdata  , dma0_prdata  , pio1_prdata  , pio0_prdata  , xip_prdata  , uart_prdata  , timer0_prdata  , perireset_prdata  , sysinfo_prdata  , mach_timer_prdata }),
+	.apbm_pslverr ({crc_pslverr , sdadc_pslverr , dma1_pslverr , dma0_pslverr , pio1_pslverr , pio0_pslverr , xip_pslverr , uart_pslverr , timer0_pslverr , perireset_pslverr , sysinfo_pslverr , mach_timer_pslverr})
 );
 
 end
@@ -1290,5 +1304,26 @@ tfpu_top tfpu (
 );
 end
 endgenerate
+
+sdadc_top #(
+	.ADC_WIDTH(10),
+	.ACCUM_BITS(12)
+) sdadc (
+	.clk         (clk),
+	.rst_n       (rst_n),
+
+	.apbs_psel   (sdadc_psel),
+	.apbs_penable(sdadc_penable),
+	.apbs_pwrite (sdadc_pwrite),
+	.apbs_paddr  (sdadc_paddr),
+	.apbs_pwdata (sdadc_pwdata),
+	.apbs_prdata (sdadc_prdata),
+	.apbs_pready (sdadc_pready),
+	.apbs_pslverr(sdadc_pslverr),
+
+	.cmp_in      (adc_cmp_in),
+	.pwm_out     (adc_pwm_out),
+	.irq         (adc_irq)
+);
 
 endmodule

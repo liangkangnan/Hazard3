@@ -51,6 +51,11 @@ set_property -dict { PACKAGE_PIN W17  IOSTANDARD LVCMOS33 } [get_ports { pio[29]
 set_property -dict { PACKAGE_PIN U17  IOSTANDARD LVCMOS33 } [get_ports { pio[30] }]; # Sch=GPIO2_16P
 set_property -dict { PACKAGE_PIN U18  IOSTANDARD LVCMOS33 } [get_ports { pio[31] }]; # Sch=GPIO2_16N
 
+################### ADC引脚 ###################
+
+set_property -dict { PACKAGE_PIN D21  IOSTANDARD LVCMOS33 } [get_ports adc_cmp_in]    ; # Sch=GPIO1_20P
+set_property -dict { PACKAGE_PIN G21  IOSTANDARD LVCMOS33 } [get_ports adc_pwm_out]   ; # Sch=GPIO1_20N
+
 ################### XIP引脚 ###################
 
 set_property -dict { PACKAGE_PIN E13  IOSTANDARD LVCMOS33 } [get_ports xip_cs_n]      ; # Sch=GPIO1_1P
