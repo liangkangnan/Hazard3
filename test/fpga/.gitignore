@@ -6,3 +6,6 @@
 *.hex
 *.map
 *.flash
+*.json
+*.fst
+*.vcd
