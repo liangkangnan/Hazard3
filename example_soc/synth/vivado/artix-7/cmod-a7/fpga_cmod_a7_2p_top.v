@@ -31,6 +31,8 @@ module fpga_cmod_a7_2p_top (
 	input  wire       uart_rx
 );
 
+`include "cmod_a7_soc_config.vh"
+
     wire clk_sys;
     wire rst_n_sys;
     wire trst_n;
@@ -108,7 +110,7 @@ module fpga_cmod_a7_2p_top (
         .sim_finish     (sim_finish),
         .reset_offset   (reset_offset),
 `else
-        .reset_offset   (32'h0000_0040),
+        .reset_offset   (RESET_VECTOR),
 `endif
 
 		.xip_cs_n       (xip_cs_n),

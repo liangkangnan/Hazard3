@@ -1,4 +1,4 @@
-localparam RESET_VECTOR        = 32'h0000_0040;
+localparam RESET_VECTOR        = 32'h0000_0000;
 localparam MTVEC_INIT          = 32'h0000_0000;
 localparam EXTENSION_A         = 1;
 localparam EXTENSION_C         = 1;

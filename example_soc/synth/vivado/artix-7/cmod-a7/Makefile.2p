@@ -1,4 +1,6 @@
-VIVADO_BASE := /home/ubuntu/tools/Xilinx/Vivado/2022.2/bin
+# Vivado 安装位置: 换机器时用命令行或环境变量覆盖, 例如
+#   make VIVADO_BASE=/tools/Xilinx/Vivado/2024.2/bin
+VIVADO_BASE ?= /home/ubuntu/tools/Xilinx/Vivado/2022.2/bin
 VIVADO := $(VIVADO_BASE)/vivado
 
 VIVADOFLAGS := \
