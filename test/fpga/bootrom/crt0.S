@@ -4,41 +4,6 @@
 
 .section .text
 
-// Hardware vector table for standard RISC-V interrupts.
-
-j _isr_riscv_machine_exception
-.word 0
-.word 0
-j _isr_riscv_machine_soft_irq
-.word 0
-.word 0
-.word 0
-j _isr_riscv_machine_timer
-.word 0
-.word 0
-.word 0
-j _isr_riscv_machine_external_irq
-.word 0
-.word 0
-.word 0
-.word 0
-j _reset_handler
-
-.weak _isr_riscv_machine_exception
-.weak _isr_riscv_machine_soft_irq
-.weak _isr_riscv_machine_timer
-.weak _isr_riscv_machine_external_irq
-
-_isr_riscv_machine_exception:
-_isr_riscv_machine_soft_irq:
-_isr_riscv_machine_timer:
-_isr_riscv_machine_external_irq:
-    ebreak
-1:
-    j 1b
-
-// ----------------------------------------------------------------------------
-
 // ELF entry point:
 .global _entry_point
 _entry_point:
@@ -62,8 +27,10 @@ copy_data:
     bltu a3, a2, 1b
 
 jump_to_iram:
+    // app 的入口在 IRAM 区首: 它的 .vector 段是空的(异常向量表在 DRAM, 由 crt0 装到
+    // mtvec), .reset 段直接落在区首。所以这里不能加偏移 —— 早先写的 +0x40 是按
+    // bootrom 自己的布局(向量表占前 0x40)推的, 跳进去正好落在 app 代码中间。
     li a0, IRAM_ADDR
-    addi a0, a0, 0x40
     jalr a0, a0
     ebreak
 1:
