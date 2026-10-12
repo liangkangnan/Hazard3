@@ -5,4 +5,5 @@ out/
 *.html
 *.xml
 .ip_user_files/
+clockInfo.txt
 
