@@ -8,7 +8,7 @@
 
 fpga_cmod_a7_top.v、fpga_cmod_a7_2p_top.v分别是单Master口（指令总线和数据总线共用）和双Master口（指令总线和数据总线独立）工程的顶层文件。
 
-目前开发主要集中在双Master口工程。
+一.目前开发主要集中在双Master口工程。
 
 1.生成FPGA比特（bit）文件，在本目录下执行以下指令：
 
@@ -32,3 +32,15 @@ openFPGALoader -b cmoda7_35t -r fpga_cmod_a7_2p_top.bit
 openFPGALoader -b cmoda7_35t -f -r fpga_cmod_a7_2p_top.bit
 ```
 
+二.如果要使用cjtag工程，则：
+```
+make -f Makefile.2p_cjtag
+```
+openocd使用如下：
+```
+https://github.com/liangkangnan/riscv-openocd
+```
+cmsis-dap使用如下：
+```
+https://github.com/liangkangnan/debugprobe
+```
